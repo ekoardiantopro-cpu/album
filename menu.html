@@ -2,69 +2,54 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Drive Saya</title>
+<title>Drive</title>
 
 <style>
-body {
-  margin:0;
-  font-family:Arial;
-  background:#f1f3f6;
-}
-
-.header {
-  background:#1976d2;
-  color:white;
-  padding:15px;
-  text-align:center;
-}
-
-.container {
-  padding:15px;
-}
-
-.card {
-  background:white;
-  padding:15px;
-  margin-bottom:10px;
-  border-radius:10px;
-  cursor:pointer;
-}
-
-.bottom {
-  position:fixed;
-  bottom:0;
-  width:100%;
-  height:60px;
-  background:white;
-  display:flex;
-  border-top:1px solid #ddd;
-}
-
-.nav {
-  flex:1;
-  text-align:center;
-  padding-top:10px;
-  cursor:pointer;
-}
+body{margin:0;background:#121212;color:white;font-family:Arial;}
+.header{padding:15px;background:#1f1f1f;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px;}
+.card{background:#1e1e1e;padding:20px;border-radius:15px;text-align:center;cursor:pointer;}
+.icon{font-size:40px;}
+.bottom{position:fixed;bottom:0;width:100%;height:60px;background:#1f1f1f;display:flex;}
+.nav{flex:1;text-align:center;padding-top:10px;}
 </style>
 </head>
 
 <body>
 
-<div class="header">📂 Drive Saya</div>
+<div class="header">
+📂 Drive Saya
+<div id="user" style="font-size:12px;color:#aaa;"></div>
+</div>
 
-<div class="container">
+<div class="grid">
 
-  <div class="card" onclick="openDrive()">
-    📁 Buka Google Drive
-  </div>
+<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">
+<div class="icon">📁</div>EKO PRO
+</div>
+
+<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg')">
+<div class="icon">📁</div>EKO 36
+</div>
+
+<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">
+<div class="icon">📁</div>EKO 03
+</div>
+
+<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">
+<div class="icon">📁</div>CV PROF
+</div>
+
+<!-- CONTOH FILE PREVIEW -->
+<div class="card" onclick="openFile('https://drive.google.com/file/d/FILE_ID/preview')">
+<div class="icon">📄</div>PDF Preview
+</div>
 
 </div>
 
 <div class="bottom">
-  <div class="nav" onclick="location.reload()">🏠</div>
-  <div class="nav" onclick="openDrive()">📂</div>
-  <div class="nav" onclick="logout()">🚪</div>
+<div class="nav" onclick="location.reload()">🏠</div>
+<div class="nav" onclick="logout()">🚪</div>
 </div>
 
 <script type="module">
@@ -72,33 +57,27 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
-  authDomain: "album-ff46e.firebaseapp.com",
-  projectId: "album-ff46e",
-  storageBucket: "album-ff46e.firebasestorage.app",
-  messagingSenderId: "112694935492",
-  appId: "1:112694935492:web:e5696cae239c50367eee91",
-  measurementId: "G-LYS0V7B1MJ"
+apiKey:"AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
+authDomain:"album-ff46e.firebaseapp.com",
+projectId:"album-ff46e",
+appId:"1:112694935492:web:e5696cae239c50367eee91"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    window.location.href = "index.html";
-  }
+onAuthStateChanged(auth,user=>{
+if(!user) location.href="index.html";
+else document.getElementById("user").innerText=user.email;
 });
 
-window.openDrive = function(){
-  window.location.href = "https://drive.google.com/drive/folders/1pae483j0LT2XpuFJlO0sKkTLmfUjVqhi?usp=sharing";
+window.openFolder=url=>window.open(url,"_blank");
+
+window.openFile=url=>{
+location.href="viewer.html?file="+encodeURIComponent(url);
 }
 
-window.logout = function(){
-  signOut(auth).then(() => {
-    window.location.href = "index.html";
-  });
-}
+window.logout=()=>signOut(auth).then(()=>location.href="index.html");
 </script>
 
 </body>
