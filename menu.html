@@ -2,270 +2,157 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Drive Premium</title>
+<title>Drive App</title>
 
 <style>
 body{margin:0;font-family:Arial;background:#121212;color:white;}
 
 .topbar{
-  height:60px;
+  padding:10px;
   background:#1f1f1f;
   display:flex;
-  align-items:center;
   justify-content:space-between;
-  padding:0 15px;
 }
-
-.search{
-  padding:8px;
-  border-radius:8px;
-  border:none;
-  background:#2a2a2a;
-  color:white;
-}
-
-.right{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-.theme-btn{
-  cursor:pointer;
-  padding:6px 10px;
-  border-radius:8px;
-  background:#2a2a2a;
-}
-
-/* PROFILE */
-.profile{position:relative;}
-
-.avatar{
-  width:34px;
-  height:34px;
-  border-radius:50%;
-  overflow:hidden;
-  cursor:pointer;
-}
-
-.avatar img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-.dropdown{
-  position:absolute;
-  top:45px;
-  right:0;
-  background:#1e1e1e;
-  border-radius:10px;
-  padding:10px;
-  width:200px;
-  display:none;
-}
-
-.dropdown.show{display:block;}
-
-/* GRID */
-.container{padding:15px;}
 
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-  gap:12px;
+  grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:10px;
+  padding:15px;
 }
 
 .card{
   background:#1e1e1e;
   padding:15px;
-  border-radius:12px;
+  border-radius:10px;
   text-align:center;
   cursor:pointer;
 }
 
-/* VIEWER */
-.viewerPage{
+.viewer{
   position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
+  top:0;left:0;
+  width:100%;height:100%;
   background:#000;
   display:none;
   flex-direction:column;
 }
 
-.viewerPage.active{display:flex;}
+.viewer.active{display:flex;}
 
-.viewerTop{
-  padding:10px;
-  background:#1f1f1f;
-}
-
-.viewerPage iframe{
+.viewer iframe{
   flex:1;
   border:none;
 }
 
-/* GALLERY */
-.gallery{
-  position:fixed;
-  width:100%;
-  height:100%;
-  background:#000;
-  display:none;
-  justify-content:center;
-  align-items:center;
-}
-
-.gallery.active{display:flex;}
-
-.gallery img{
+.viewer img{
   max-width:90%;
-  max-height:90%;
+  margin:auto;
 }
 
-/* LIGHT MODE */
-body.light{background:#f5f5f5;color:#111;}
-body.light .topbar{background:#fff;}
-body.light .card{background:#fff;}
 </style>
 </head>
 
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
-<input class="search" id="search" placeholder="Cari file...">
-
-<div class="right">
-<span id="themeToggle" class="theme-btn">🌙</span>
-
-<div class="profile">
-<div class="avatar" id="avatar"></div>
-
-<div class="dropdown" id="dropdown">
-<div id="userEmail"></div>
-<hr>
-<div onclick="logout()">🚪 Logout</div>
-</div>
-</div>
-</div>
+<b>Drive App</b>
+<button onclick="back()">⬅️</button>
 </div>
 
-<!-- GRID -->
-<div class="container">
-<div class="grid">
+<div class="grid" id="grid"></div>
 
-<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">📁 EKO PRO</div>
-<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg')">📁 EKO 36</div>
-<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">📁 EKO 03</div>
-<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">📁 CV PROF</div>
-
-<div class="card" onclick="openImage('https://picsum.photos/800')">🖼️ Preview Image</div>
-
-</div>
+<div class="viewer" id="viewer">
+<button onclick="closeViewer()">❌</button>
+<div id="preview"></div>
 </div>
 
-<!-- VIEWER -->
-<div class="viewerPage" id="viewerPage">
-<div class="viewerTop">
-<button onclick="closeViewer()">⬅️ Kembali</button>
-</div>
-<iframe id="viewer"></iframe>
-</div>
+<script>
 
-<!-- GALLERY -->
-<div class="gallery" id="gallery" onclick="closeImage()">
-<img id="imgView">
-</div>
+/* 🔥 DATA FILE (SIMULASI DRIVE) */
+const data = {
+  root: [
+    {type:"folder", name:"EKO PRO", id:"eko_pro"},
+    {type:"folder", name:"EKO 36", id:"eko_36"},
+    {type:"folder", name:"EKO 03", id:"eko_03"},
+  ],
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  eko_pro: [
+    {type:"image", name:"Foto 1", url:"https://picsum.photos/500"},
+    {type:"pdf", name:"File PDF", url:"https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"}
+  ],
 
-const firebaseConfig = {
-apiKey:"AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
-authDomain:"album-ff46e.firebaseapp.com",
-projectId:"album-ff46e",
-appId:"1:112694935492:web:e5696cae239c50367eee91"
+  eko_36: [
+    {type:"image", name:"Gambar", url:"https://picsum.photos/600"}
+  ],
+
+  eko_03: []
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+let current = "root";
 
-const avatar = document.getElementById("avatar");
-const dropdown = document.getElementById("dropdown");
-const userEmail = document.getElementById("userEmail");
+/* RENDER */
+function render(){
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
 
-/* AUTH CHECK (NO AUTO LOGIN) */
-onAuthStateChanged(auth, user=>{
-  if(user){
-    userEmail.innerText = user.email;
+  data[current].forEach(item=>{
+    const div = document.createElement("div");
+    div.className = "card";
 
-    if(user.photoURL){
-      avatar.innerHTML = `<img src="${user.photoURL}">`;
-    }else{
-      avatar.innerHTML = user.email.charAt(0).toUpperCase();
+    if(item.type==="folder"){
+      div.innerHTML = "📁<br>"+item.name;
+      div.onclick = ()=>{
+        current = item.id;
+        render();
+      };
     }
-  }else{
-    location.href = "index.html";
-  }
-});
 
-/* DROPDOWN */
-avatar.onclick = ()=> dropdown.classList.toggle("show");
+    if(item.type==="image"){
+      div.innerHTML = "🖼️<br>"+item.name;
+      div.onclick = ()=>openImage(item.url);
+    }
 
-/* LOGOUT */
-window.logout = ()=>{
-  signOut(auth).then(()=>{
-    location.href="index.html";
+    if(item.type==="pdf"){
+      div.innerHTML = "📄<br>"+item.name;
+      div.onclick = ()=>openPDF(item.url);
+    }
+
+    grid.appendChild(div);
   });
-};
+}
 
-/* 🔥 FIX: OPEN FOLDER TANPA TAB BARU */
-window.openFolder = (url)=>{
-  const match = url.match(/folders\/([a-zA-Z0-9_-]+)/);
+/* BACK */
+function back(){
+  current="root";
+  render();
+}
 
-  if(!match){
-    alert("Link folder tidak valid");
-    return;
-  }
+/* IMAGE */
+function openImage(url){
+  const viewer = document.getElementById("viewer");
+  const preview = document.getElementById("preview");
 
-  const id = match[1];
+  preview.innerHTML = `<img src="${url}">`;
+  viewer.classList.add("active");
+}
 
-  const embed = `https://drive.google.com/embeddedfolderview?id=${id}#grid`;
+/* PDF */
+function openPDF(url){
+  const viewer = document.getElementById("viewer");
+  const preview = document.getElementById("preview");
 
-  document.getElementById("viewerPage").classList.add("active");
-  document.getElementById("viewer").src = embed;
-};
+  preview.innerHTML = `<iframe src="${url}"></iframe>`;
+  viewer.classList.add("active");
+}
 
-/* CLOSE VIEW */
-window.closeViewer = ()=>{
-  document.getElementById("viewerPage").classList.remove("active");
-};
+/* CLOSE */
+function closeViewer(){
+  document.getElementById("viewer").classList.remove("active");
+}
 
-/* IMAGE PREVIEW */
-window.openImage = (src)=>{
-  document.getElementById("gallery").classList.add("active");
-  document.getElementById("imgView").src = src;
-};
+render();
 
-window.closeImage = ()=>{
-  document.getElementById("gallery").classList.remove("active");
-};
-
-/* THEME */
-const toggle = document.getElementById("themeToggle");
-
-toggle.onclick = ()=>{
-  document.body.classList.toggle("light");
-};
 </script>
 
 </body>
