@@ -10,37 +10,6 @@ body{
   font-family:Arial;
   background:#121212;
   color:white;
-  display:flex;
-}
-
-/* SIDEBAR */
-.sidebar{
-  width:220px;
-  background:#1e1e1e;
-  height:100vh;
-  padding:15px;
-}
-
-.sidebar h2{
-  font-size:18px;
-}
-
-.menu-item{
-  padding:10px;
-  border-radius:8px;
-  margin-top:10px;
-  cursor:pointer;
-}
-
-.menu-item:hover{
-  background:#2a2a2a;
-}
-
-/* MAIN */
-.main{
-  flex:1;
-  display:flex;
-  flex-direction:column;
 }
 
 /* TOPBAR */
@@ -49,12 +18,12 @@ body{
   background:#1f1f1f;
   display:flex;
   align-items:center;
-  padding:0 15px;
   justify-content:space-between;
+  padding:0 15px;
 }
 
 .search{
-  width:300px;
+  width:200px;
   padding:8px;
   border-radius:8px;
   border:none;
@@ -62,37 +31,49 @@ body{
   color:white;
 }
 
+.user{
+  font-size:12px;
+  color:#aaa;
+}
+
 /* GRID */
-.grid{
+.container{
   padding:15px;
+}
+
+.grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-  gap:15px;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:12px;
 }
 
 .card{
   background:#1e1e1e;
   padding:15px;
   border-radius:12px;
+  text-align:center;
   cursor:pointer;
   transition:0.2s;
 }
 
 .card:hover{
-  transform:translateY(-5px);
-  box-shadow:0 5px 15px rgba(0,0,0,0.5);
+  transform:translateY(-3px);
+}
+
+.hidden{
+  display:none;
+}
+
+/* ICON / THUMB */
+.icon{
+  font-size:40px;
 }
 
 .thumb{
   width:100%;
-  height:100px;
+  height:90px;
   object-fit:cover;
   border-radius:8px;
-}
-
-.title{
-  margin-top:8px;
-  font-size:14px;
 }
 
 /* VIEWER */
@@ -114,73 +95,85 @@ body{
 .viewerTop{
   padding:10px;
   background:#1f1f1f;
+  display:flex;
+  justify-content:space-between;
 }
 
 iframe{
   flex:1;
   border:none;
 }
+
+.btn{
+  background:#4CAF50;
+  border:none;
+  padding:8px 12px;
+  border-radius:8px;
+  color:white;
+  cursor:pointer;
+}
 </style>
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-<h2>📂 Drive</h2>
-
-<div class="menu-item">🏠 Home</div>
-<div class="menu-item">⭐ Favorite</div>
-<div class="menu-item">🕒 Recent</div>
-
-</div>
-
-<!-- MAIN -->
-<div class="main">
-
+<!-- TOPBAR -->
 <div class="topbar">
-<input class="search" placeholder="Cari file...">
-<div id="user"></div>
+  <input class="search" id="search" placeholder="Cari file...">
+  <div class="user" id="user"></div>
 </div>
 
+<!-- GRID -->
+<div class="container">
 <div class="grid" id="grid">
 
+<div class="card" data-name="eko pro" onclick="openFolder('https://drive.google.com/drive/folders/1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">
+  <div class="icon">📁</div>
+  <div>EKO PRO</div>
+</div>
+
+<div class="card" data-name="eko 36" onclick="openFolder('https://drive.google.com/drive/folders/18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg')">
+  <div class="icon">📁</div>
+  <div>EKO 36</div>
+</div>
+
+<div class="card" data-name="eko 03" onclick="openFolder('https://drive.google.com/drive/folders/1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">
+  <div class="icon">📁</div>
+  <div>EKO 03</div>
+</div>
+
+<div class="card" data-name="cv prof" onclick="openFolder('https://drive.google.com/drive/folders/1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">
+  <div class="icon">📁</div>
+  <div>CV PROF</div>
+</div>
+
 <!-- IMAGE -->
-<div class="card" onclick="openFile('https://drive.google.com/uc?export=view&id=FILE_ID')">
-<img class="thumb" src="https://drive.google.com/uc?export=view&id=FILE_ID">
-<div class="title">Gambar</div>
+<div class="card" data-name="gambar foto" onclick="openFile('https://drive.google.com/uc?export=view&id=FILE_ID')">
+  <img class="thumb" src="https://drive.google.com/uc?export=view&id=FILE_ID">
+  <div>Gambar</div>
 </div>
 
 <!-- PDF -->
-<div class="card" onclick="openFile('https://drive.google.com/file/d/FILE_ID/preview')">
-📄
-<div class="title">PDF File</div>
-</div>
-
-<!-- FOLDER -->
-<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">
-📁
-<div class="title">EKO PRO</div>
+<div class="card" data-name="pdf dokumen" onclick="openFile('https://drive.google.com/file/d/FILE_ID/preview')">
+  <div class="icon">📄</div>
+  <div>PDF</div>
 </div>
 
 </div>
-
 </div>
 
 <!-- VIEWER -->
 <div class="viewerPage" id="viewerPage">
-
 <div class="viewerTop">
-<button onclick="closeViewer()">⬅️ Kembali</button>
+  <button class="btn" onclick="closeViewer()">⬅️ Kembali</button>
+  <button class="btn" onclick="logout()">Logout</button>
 </div>
-
 <iframe id="viewer"></iframe>
-
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
 apiKey:"AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
@@ -194,24 +187,46 @@ const auth = getAuth(app);
 
 /* USER */
 onAuthStateChanged(auth,user=>{
-if(!user) location.href="index.html";
-else document.getElementById("user").innerText=user.email;
+  if(!user) location.href="index.html";
+  else document.getElementById("user").innerText=user.email;
 });
 
-/* OPEN FILE */
+/* SEARCH FILTER */
+const search = document.getElementById("search");
+const cards = document.querySelectorAll(".card");
+
+search.addEventListener("input", function(){
+  const value = this.value.toLowerCase();
+
+  cards.forEach(card=>{
+    const name = card.getAttribute("data-name");
+    if(name.includes(value)){
+      card.classList.remove("hidden");
+    }else{
+      card.classList.add("hidden");
+    }
+  });
+});
+
+/* FILE */
 window.openFile = function(url){
-viewer.src = url;
-viewerPage.classList.add("active");
+  viewer.src = url;
+  viewerPage.classList.add("active");
 }
 
 /* CLOSE */
 window.closeViewer = function(){
-viewerPage.classList.remove("active");
+  viewerPage.classList.remove("active");
 }
 
 /* FOLDER */
 window.openFolder = function(url){
-window.open(url,"_blank");
+  window.open(url,"_blank");
+}
+
+/* LOGOUT */
+window.logout = function(){
+  signOut(auth).then(()=> location.href="index.html");
 }
 </script>
 
