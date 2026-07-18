@@ -2,42 +2,64 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Login</title>
+<title>Drive App</title>
 
 <style>
-body {
-  margin:0;
-  font-family:Arial;
-  background:#1976d2;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
+body{margin:0;font-family:Arial;background:#121212;color:white;}
+#splash{
+position:fixed;width:100%;height:100%;
+display:flex;justify-content:center;align-items:center;
+flex-direction:column;background:#121212;z-index:10;
 }
-
-.box {
-  background:white;
-  padding:25px;
-  border-radius:10px;
-  width:300px;
+.loader{
+width:40px;height:40px;border:4px solid #333;
+border-top:4px solid #4CAF50;border-radius:50%;
+animation:spin 1s linear infinite;margin-top:10px;
 }
+@keyframes spin{100%{transform:rotate(360deg);}}
 
-input,button {
-  width:100%;
-  padding:10px;
-  margin-top:10px;
+.box{
+opacity:0;transition:0.6s;
+position:absolute;top:50%;left:50%;
+transform:translate(-50%,-40%);
+background:#1e1e1e;padding:30px;border-radius:15px;width:300px;text-align:center;
+}
+.box.show{opacity:1;transform:translate(-50%,-50%);}
+
+input,button{width:100%;padding:10px;margin-top:10px;border:none;border-radius:8px;}
+input{background:#2a2a2a;color:white;}
+button{background:#4CAF50;color:white;}
+
+.pw-box{position:relative;}
+.toggle{
+position:absolute;right:10px;top:50%;
+transform:translateY(-50%);cursor:pointer;
 }
 </style>
 </head>
 
 <body>
 
-<div class="box">
-  <h2>🔐 Login</h2>
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="pw" placeholder="Password">
-  <button onclick="login()">Masuk</button>
-  <p id="msg"></p>
+<div id="splash">
+<h1>📂 Drive App</h1>
+<div class="loader"></div>
+</div>
+
+<div class="box" id="loginBox">
+<h2>Login</h2>
+
+<form onsubmit="login(event)">
+<input type="email" id="email" placeholder="Email" required>
+
+<div class="pw-box">
+<input type="password" id="pw" placeholder="Password" required>
+<span class="toggle" onclick="togglePw()">👁️</span>
+</div>
+
+<button type="submit">Masuk</button>
+</form>
+
+<p id="msg"></p>
 </div>
 
 <script type="module">
@@ -45,30 +67,31 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
-  authDomain: "album-ff46e.firebaseapp.com",
-  projectId: "album-ff46e",
-  storageBucket: "album-ff46e.firebasestorage.app",
-  messagingSenderId: "112694935492",
-  appId: "1:112694935492:web:e5696cae239c50367eee91",
-  measurementId: "G-LYS0V7B1MJ"
+apiKey:"AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
+authDomain:"album-ff46e.firebaseapp.com",
+projectId:"album-ff46e",
+appId:"1:112694935492:web:e5696cae239c50367eee91"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-window.login = function(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("pw").value;
-  const msg = document.getElementById("msg");
+setTimeout(()=>{
+splash.style.display="none";
+loginBox.classList.add("show");
+},1500);
 
-  signInWithEmailAndPassword(auth, email, password)
-    .then(() => {
-      window.location.href = "menu.html";
-    })
-    .catch(() => {
-      msg.innerText = "Login gagal!";
-    });
+window.login = function(e){
+e.preventDefault();
+msg.innerText="Loading...";
+
+signInWithEmailAndPassword(auth,email.value,pw.value)
+.then(()=>location.href="menu.html")
+.catch(()=>msg.innerText="Login gagal!");
+}
+
+window.togglePw=function(){
+pw.type = pw.type==="password"?"text":"password";
 }
 </script>
 
