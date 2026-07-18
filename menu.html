@@ -2,59 +2,185 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Drive</title>
+<title>Drive Premium</title>
 
 <style>
-body{margin:0;background:#121212;color:white;font-family:Arial;}
-.header{padding:15px;background:#1f1f1f;}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px;}
-.card{background:#1e1e1e;padding:20px;border-radius:15px;text-align:center;cursor:pointer;}
-.icon{font-size:40px;}
-.bottom{position:fixed;bottom:0;width:100%;height:60px;background:#1f1f1f;display:flex;}
-.nav{flex:1;text-align:center;padding-top:10px;}
+body{
+  margin:0;
+  font-family:Arial;
+  background:#121212;
+  color:white;
+  display:flex;
+}
+
+/* SIDEBAR */
+.sidebar{
+  width:220px;
+  background:#1e1e1e;
+  height:100vh;
+  padding:15px;
+}
+
+.sidebar h2{
+  font-size:18px;
+}
+
+.menu-item{
+  padding:10px;
+  border-radius:8px;
+  margin-top:10px;
+  cursor:pointer;
+}
+
+.menu-item:hover{
+  background:#2a2a2a;
+}
+
+/* MAIN */
+.main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+/* TOPBAR */
+.topbar{
+  height:60px;
+  background:#1f1f1f;
+  display:flex;
+  align-items:center;
+  padding:0 15px;
+  justify-content:space-between;
+}
+
+.search{
+  width:300px;
+  padding:8px;
+  border-radius:8px;
+  border:none;
+  background:#2a2a2a;
+  color:white;
+}
+
+/* GRID */
+.grid{
+  padding:15px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  gap:15px;
+}
+
+.card{
+  background:#1e1e1e;
+  padding:15px;
+  border-radius:12px;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.card:hover{
+  transform:translateY(-5px);
+  box-shadow:0 5px 15px rgba(0,0,0,0.5);
+}
+
+.thumb{
+  width:100%;
+  height:100px;
+  object-fit:cover;
+  border-radius:8px;
+}
+
+.title{
+  margin-top:8px;
+  font-size:14px;
+}
+
+/* VIEWER */
+.viewerPage{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:#121212;
+  display:none;
+  flex-direction:column;
+}
+
+.viewerPage.active{
+  display:flex;
+}
+
+.viewerTop{
+  padding:10px;
+  background:#1f1f1f;
+}
+
+iframe{
+  flex:1;
+  border:none;
+}
 </style>
 </head>
 
 <body>
 
-<div class="header">
-📂 Drive Saya
-<div id="user" style="font-size:12px;color:#aaa;"></div>
+<!-- SIDEBAR -->
+<div class="sidebar">
+<h2>📂 Drive</h2>
+
+<div class="menu-item">🏠 Home</div>
+<div class="menu-item">⭐ Favorite</div>
+<div class="menu-item">🕒 Recent</div>
+
 </div>
 
-<div class="grid">
+<!-- MAIN -->
+<div class="main">
 
-<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">
-<div class="icon">📁</div>EKO PRO
+<div class="topbar">
+<input class="search" placeholder="Cari file...">
+<div id="user"></div>
 </div>
 
-<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg')">
-<div class="icon">📁</div>EKO 36
+<div class="grid" id="grid">
+
+<!-- IMAGE -->
+<div class="card" onclick="openFile('https://drive.google.com/uc?export=view&id=FILE_ID')">
+<img class="thumb" src="https://drive.google.com/uc?export=view&id=FILE_ID">
+<div class="title">Gambar</div>
 </div>
 
-<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">
-<div class="icon">📁</div>EKO 03
-</div>
-
-<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">
-<div class="icon">📁</div>CV PROF
-</div>
-
-<!-- CONTOH FILE PREVIEW -->
+<!-- PDF -->
 <div class="card" onclick="openFile('https://drive.google.com/file/d/FILE_ID/preview')">
-<div class="icon">📄</div>PDF Preview
+📄
+<div class="title">PDF File</div>
+</div>
+
+<!-- FOLDER -->
+<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">
+📁
+<div class="title">EKO PRO</div>
 </div>
 
 </div>
 
-<div class="bottom">
-<div class="nav" onclick="location.reload()">🏠</div>
-<div class="nav" onclick="logout()">🚪</div>
+</div>
+
+<!-- VIEWER -->
+<div class="viewerPage" id="viewerPage">
+
+<div class="viewerTop">
+<button onclick="closeViewer()">⬅️ Kembali</button>
+</div>
+
+<iframe id="viewer"></iframe>
+
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
 apiKey:"AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
@@ -66,18 +192,27 @@ appId:"1:112694935492:web:e5696cae239c50367eee91"
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+/* USER */
 onAuthStateChanged(auth,user=>{
 if(!user) location.href="index.html";
 else document.getElementById("user").innerText=user.email;
 });
 
-window.openFolder=url=>window.open(url,"_blank");
-
-window.openFile=url=>{
-location.href="viewer.html?file="+encodeURIComponent(url);
+/* OPEN FILE */
+window.openFile = function(url){
+viewer.src = url;
+viewerPage.classList.add("active");
 }
 
-window.logout=()=>signOut(auth).then(()=>location.href="index.html");
+/* CLOSE */
+window.closeViewer = function(){
+viewerPage.classList.remove("active");
+}
+
+/* FOLDER */
+window.openFolder = function(url){
+window.open(url,"_blank");
+}
 </script>
 
 </body>
