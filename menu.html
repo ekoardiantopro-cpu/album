@@ -33,9 +33,11 @@ body{
   color:white;
 }
 
-.user{
-  font-size:12px;
-  color:#aaa;
+/* RIGHT */
+.right{
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 
 /* THEME BUTTON */
@@ -55,15 +57,61 @@ body.light .theme-btn{
   background:#ddd;
 }
 
-/* BUTTON */
-.btn{
-  background:#e53935;
-  border:none;
-  padding:6px 10px;
-  border-radius:8px;
-  color:white;
+/* PROFILE */
+.profile{
+  position:relative;
+}
+
+.avatar{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  overflow:hidden;
   cursor:pointer;
+}
+
+.avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+/* DROPDOWN */
+.dropdown{
+  position:absolute;
+  top:45px;
+  right:0;
+  background:#1e1e1e;
+  border-radius:10px;
+  padding:10px;
+  width:200px;
+  display:none;
+  box-shadow:0 5px 15px rgba(0,0,0,0.5);
+}
+
+.dropdown.show{
+  display:block;
+}
+
+.dropdown .email{
   font-size:12px;
+  color:#aaa;
+  margin-bottom:8px;
+}
+
+.dropdown .logout{
+  padding:8px;
+  cursor:pointer;
+  border-radius:6px;
+}
+
+.dropdown .logout:hover{
+  background:#333;
+}
+
+body.light .dropdown{
+  background:#fff;
+  color:#000;
 }
 
 /* GRID */
@@ -85,45 +133,8 @@ body.light .theme-btn{
   cursor:pointer;
 }
 
-.card:hover{
-  transform:translateY(-3px);
-}
-
-.hidden{
-  display:none;
-}
-
-/* ICON */
 .icon{
   font-size:40px;
-}
-
-/* VIEWER */
-.viewerPage{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:#121212;
-  display:none;
-  flex-direction:column;
-}
-
-.viewerPage.active{
-  display:flex;
-}
-
-.viewerTop{
-  padding:10px;
-  background:#1f1f1f;
-  display:flex;
-  justify-content:space-between;
-}
-
-iframe{
-  flex:1;
-  border:none;
 }
 
 /* LIGHT MODE */
@@ -149,61 +160,49 @@ body.light .search{
 
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
 
   <input class="search" id="search" placeholder="Cari file...">
 
-  <div style="display:flex;align-items:center;gap:10px;">
-    
-    <!-- ICON DARK/LIGHT -->
+  <div class="right">
+
     <span id="themeToggle" class="theme-btn">🌙</span>
 
-    <div class="user" id="user"></div>
+    <!-- PROFILE -->
+    <div class="profile">
+      <div class="avatar" id="avatar"></div>
 
-    <button onclick="logout()" class="btn">Keluar</button>
+      <div class="dropdown" id="dropdown">
+        <div class="email" id="userEmail"></div>
+        <hr>
+        <div class="logout" onclick="logout()">🚪 Keluar</div>
+      </div>
+    </div>
 
   </div>
 
 </div>
 
-<!-- GRID -->
 <div class="container">
 <div class="grid">
 
 <div class="card folder" data-name="eko pro" onclick="openFolder('https://drive.google.com/drive/folders/1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">
-  <div class="icon">📁</div>
-  <div>EKO PRO</div>
+  <div class="icon">📁</div>EKO PRO
 </div>
 
 <div class="card folder" data-name="eko 36" onclick="openFolder('https://drive.google.com/drive/folders/18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg')">
-  <div class="icon">📁</div>
-  <div>EKO 36</div>
+  <div class="icon">📁</div>EKO 36
 </div>
 
 <div class="card folder" data-name="eko 03" onclick="openFolder('https://drive.google.com/drive/folders/1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">
-  <div class="icon">📁</div>
-  <div>EKO 03</div>
+  <div class="icon">📁</div>EKO 03
 </div>
 
 <div class="card folder" data-name="cv prof" onclick="openFolder('https://drive.google.com/drive/folders/1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">
-  <div class="icon">📁</div>
-  <div>CV PROF</div>
+  <div class="icon">📁</div>CV PROF
 </div>
 
 </div>
-</div>
-
-<!-- VIEWER -->
-<div class="viewerPage" id="viewerPage">
-
-<div class="viewerTop">
-  <button class="btn" onclick="closeViewer()">⬅️ Kembali</button>
-  <button class="btn" onclick="logout()">Logout</button>
-</div>
-
-<iframe id="viewer"></iframe>
-
 </div>
 
 <script type="module">
@@ -220,69 +219,80 @@ appId:"1:112694935492:web:e5696cae239c50367eee91"
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+const avatar = document.getElementById("avatar");
+const dropdown = document.getElementById("dropdown");
+const userEmail = document.getElementById("userEmail");
+
 /* USER */
 onAuthStateChanged(auth,user=>{
   if(!user){
     location.href="index.html";
   }else{
-    document.getElementById("user").innerText=user.email;
+    userEmail.innerText = user.email;
+
+    // 🔥 FOTO AVATAR RANDOM (bisa diganti nanti)
+    avatar.innerHTML = '<img src="https://i.pravatar.cc/100" />';
   }
 });
+
+/* DROPDOWN */
+avatar.onclick = ()=>{
+  dropdown.classList.toggle("show");
+};
+
+window.onclick = (e)=>{
+  if(!e.target.closest(".profile")){
+    dropdown.classList.remove("show");
+  }
+};
+
+/* LOGOUT */
+window.logout = ()=>{
+  signOut(auth).then(()=> location.href="index.html");
+};
+
+/* FOLDER */
+window.openFolder = (url)=>{
+  window.open(url,"_blank");
+};
 
 /* SEARCH */
 const search = document.getElementById("search");
 const cards = document.querySelectorAll(".card");
 
 search.addEventListener("input", function(){
-  const value = this.value.toLowerCase().trim();
+  const value = this.value.toLowerCase();
 
   cards.forEach(card=>{
-    const name = (card.getAttribute("data-name") || "").toLowerCase();
-
     if(card.classList.contains("folder")){
-      card.style.display = "block";
+      card.style.display="block";
       return;
     }
 
-    if(name.includes(value)){
-      card.style.display = "block";
-    }else{
-      card.style.display = "none";
-    }
+    const name = card.dataset.name || "";
+    card.style.display = name.includes(value) ? "block" : "none";
   });
 });
 
-/* FOLDER */
-window.openFolder = function(url){
-  window.open(url,"_blank");
-}
-
-/* LOGOUT */
-window.logout = function(){
-  signOut(auth).then(()=> location.href="index.html");
-}
-
-/* THEME TOGGLE */
+/* THEME */
 const toggle = document.getElementById("themeToggle");
 
-if(localStorage.getItem("theme") === "light"){
+if(localStorage.getItem("theme")==="light"){
   document.body.classList.add("light");
-  toggle.innerText = "☀️";
-}else{
-  toggle.innerText = "🌙";
+  toggle.innerText="☀️";
 }
 
-toggle.onclick = function(){
+toggle.onclick = ()=>{
   document.body.classList.toggle("light");
 
   if(document.body.classList.contains("light")){
     localStorage.setItem("theme","light");
-    toggle.innerText = "☀️";
+    toggle.innerText="☀️";
   }else{
     localStorage.setItem("theme","dark");
-    toggle.innerText = "🌙";
+    toggle.innerText="🌙";
   }
-}
+};
 </script>
 
 </body>
