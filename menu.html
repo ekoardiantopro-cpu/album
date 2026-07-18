@@ -203,7 +203,7 @@ const avatar = document.getElementById("avatar");
 const dropdown = document.getElementById("dropdown");
 const userEmail = document.getElementById("userEmail");
 
-/* ✅ CEK USER (TANPA AUTO LOGIN) */
+/* AUTH CHECK (NO AUTO LOGIN) */
 onAuthStateChanged(auth, user=>{
   if(user){
     userEmail.innerText = user.email;
@@ -213,7 +213,6 @@ onAuthStateChanged(auth, user=>{
     }else{
       avatar.innerHTML = user.email.charAt(0).toUpperCase();
     }
-
   }else{
     location.href = "index.html";
   }
@@ -222,27 +221,36 @@ onAuthStateChanged(auth, user=>{
 /* DROPDOWN */
 avatar.onclick = ()=> dropdown.classList.toggle("show");
 
-/* LOGOUT FIX */
+/* LOGOUT */
 window.logout = ()=>{
   signOut(auth).then(()=>{
-    location.href = "index.html";
+    location.href="index.html";
   });
 };
 
-/* FOLDER EMBED */
+/* 🔥 FIX: OPEN FOLDER TANPA TAB BARU */
 window.openFolder = (url)=>{
-  const id = url.split("/folders/")[1];
+  const match = url.match(/folders\/([a-zA-Z0-9_-]+)/);
+
+  if(!match){
+    alert("Link folder tidak valid");
+    return;
+  }
+
+  const id = match[1];
+
   const embed = `https://drive.google.com/embeddedfolderview?id=${id}#grid`;
 
   document.getElementById("viewerPage").classList.add("active");
   document.getElementById("viewer").src = embed;
 };
 
+/* CLOSE VIEW */
 window.closeViewer = ()=>{
   document.getElementById("viewerPage").classList.remove("active");
 };
 
-/* IMAGE */
+/* IMAGE PREVIEW */
 window.openImage = (src)=>{
   document.getElementById("gallery").classList.add("active");
   document.getElementById("imgView").src = src;
