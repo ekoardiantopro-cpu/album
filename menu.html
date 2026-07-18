@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Drive Saya</title>
+
+<style>
+body {
+  margin:0;
+  font-family:Arial;
+  background:#f1f3f6;
+}
+
+.header {
+  background:#1976d2;
+  color:white;
+  padding:15px;
+  text-align:center;
+}
+
+.container {
+  padding:15px;
+}
+
+.card {
+  background:white;
+  padding:15px;
+  margin-bottom:10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.bottom {
+  position:fixed;
+  bottom:0;
+  width:100%;
+  height:60px;
+  background:white;
+  display:flex;
+  border-top:1px solid #ddd;
+}
+
+.nav {
+  flex:1;
+  text-align:center;
+  padding-top:10px;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">📂 Drive Saya</div>
+
+<div class="container">
+
+  <div class="card" onclick="openDrive()">
+    📁 Buka Google Drive
+  </div>
+
+</div>
+
+<div class="bottom">
+  <div class="nav" onclick="location.reload()">🏠</div>
+  <div class="nav" onclick="openDrive()">📂</div>
+  <div class="nav" onclick="logout()">🚪</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
+  authDomain: "album-ff46e.firebaseapp.com",
+  projectId: "album-ff46e",
+  storageBucket: "album-ff46e.firebasestorage.app",
+  messagingSenderId: "112694935492",
+  appId: "1:112694935492:web:e5696cae239c50367eee91",
+  measurementId: "G-LYS0V7B1MJ"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+  }
+});
+
+window.openDrive = function(){
+  window.location.href = "https://drive.google.com/drive/folders/1pae483j0LT2XpuFJlO0sKkTLmfUjVqhi?usp=sharing";
+}
+
+window.logout = function(){
+  signOut(auth).then(() => {
+    window.location.href = "index.html";
+  });
+}
+</script>
+
+</body>
+</html>

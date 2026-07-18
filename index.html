@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Login</title>
+
+<style>
+body {
+  margin:0;
+  font-family:Arial;
+  background:#1976d2;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.box {
+  background:white;
+  padding:25px;
+  border-radius:10px;
+  width:300px;
+}
+
+input,button {
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>🔐 Login</h2>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="pw" placeholder="Password">
+  <button onclick="login()">Masuk</button>
+  <p id="msg"></p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
+  authDomain: "album-ff46e.firebaseapp.com",
+  projectId: "album-ff46e",
+  storageBucket: "album-ff46e.firebasestorage.app",
+  messagingSenderId: "112694935492",
+  appId: "1:112694935492:web:e5696cae239c50367eee91",
+  measurementId: "G-LYS0V7B1MJ"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+window.login = function(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("pw").value;
+  const msg = document.getElementById("msg");
+
+  signInWithEmailAndPassword(auth, email, password)
+    .then(() => {
+      window.location.href = "menu.html";
+    })
+    .catch(() => {
+      msg.innerText = "Login gagal!";
+    });
+}
+</script>
+
+</body>
+</html>
