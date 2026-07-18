@@ -5,209 +5,85 @@
 <title>Drive Premium</title>
 
 <style>
-*{transition: background 0.3s, color 0.3s;}
+body{margin:0;font-family:Arial;background:#121212;color:white;}
+.topbar{height:60px;background:#1f1f1f;display:flex;align-items:center;justify-content:space-between;padding:0 15px;}
+.search{padding:8px;border-radius:8px;border:none;background:#2a2a2a;color:white;}
+.right{display:flex;align-items:center;gap:10px;}
 
-body{
-  margin:0;
-  font-family:Arial;
-  background:#121212;
-  color:white;
-}
+.theme-btn{cursor:pointer;padding:6px 10px;border-radius:8px;background:#2a2a2a;}
 
-/* TOPBAR */
-.topbar{
-  height:60px;
-  background:#1f1f1f;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 15px;
-}
+.profile{position:relative;}
+.avatar{width:34px;height:34px;border-radius:50%;overflow:hidden;cursor:pointer;}
+.avatar img{width:100%;height:100%;object-fit:cover;}
 
-.search{
-  width:200px;
-  padding:8px;
-  border-radius:8px;
-  border:none;
-  background:#2a2a2a;
-  color:white;
-}
+.dropdown{position:absolute;top:45px;right:0;background:#1e1e1e;border-radius:10px;padding:10px;width:200px;display:none;}
+.dropdown.show{display:block;}
 
-/* RIGHT */
-.right{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
+.container{padding:15px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;}
 
-/* THEME BUTTON */
-.theme-btn{
-  font-size:18px;
-  cursor:pointer;
-  padding:6px 10px;
-  border-radius:8px;
-  background:#2a2a2a;
-}
+.card{background:#1e1e1e;padding:15px;border-radius:12px;text-align:center;cursor:pointer;}
+.icon{font-size:40px;}
 
-.theme-btn:hover{
-  background:#3a3a3a;
-}
+.viewer{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;display:none;flex-direction:column;}
+.viewer.active{display:flex;}
+.viewer iframe{flex:1;border:none;}
 
-body.light .theme-btn{
-  background:#ddd;
-}
+.gallery{position:fixed;width:100%;height:100%;top:0;left:0;background:#000;display:none;justify-content:center;align-items:center;}
+.gallery.active{display:flex;}
+.gallery img{max-width:90%;max-height:90%;}
 
-/* PROFILE */
-.profile{
-  position:relative;
-}
-
-.avatar{
-  width:34px;
-  height:34px;
-  border-radius:50%;
-  overflow:hidden;
-  cursor:pointer;
-}
-
-.avatar img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-/* DROPDOWN */
-.dropdown{
-  position:absolute;
-  top:45px;
-  right:0;
-  background:#1e1e1e;
-  border-radius:10px;
-  padding:10px;
-  width:200px;
-  display:none;
-  box-shadow:0 5px 15px rgba(0,0,0,0.5);
-}
-
-.dropdown.show{
-  display:block;
-}
-
-.dropdown .email{
-  font-size:12px;
-  color:#aaa;
-  margin-bottom:8px;
-}
-
-.dropdown .logout{
-  padding:8px;
-  cursor:pointer;
-  border-radius:6px;
-}
-
-.dropdown .logout:hover{
-  background:#333;
-}
-
-body.light .dropdown{
-  background:#fff;
-  color:#000;
-}
-
-/* GRID */
-.container{
-  padding:15px;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-  gap:12px;
-}
-
-.card{
-  background:#1e1e1e;
-  padding:15px;
-  border-radius:12px;
-  text-align:center;
-  cursor:pointer;
-}
-
-.icon{
-  font-size:40px;
-}
-
-/* LIGHT MODE */
-body.light{
-  background:#f5f5f5;
-  color:#111;
-}
-
-body.light .topbar{
-  background:#fff;
-}
-
-body.light .card{
-  background:#fff;
-}
-
-body.light .search{
-  background:#eee;
-  color:#000;
-}
 </style>
 </head>
 
 <body>
 
 <div class="topbar">
+<input class="search" placeholder="Cari...">
 
-  <input class="search" id="search" placeholder="Cari file...">
+<div class="right">
+<span id="themeToggle" class="theme-btn">🌙</span>
 
-  <div class="right">
+<div class="profile">
+<div class="avatar" id="avatar"></div>
 
-    <span id="themeToggle" class="theme-btn">🌙</span>
-
-    <!-- PROFILE -->
-    <div class="profile">
-      <div class="avatar" id="avatar"></div>
-
-      <div class="dropdown" id="dropdown">
-        <div class="email" id="userEmail"></div>
-        <hr>
-        <div class="logout" onclick="logout()">🚪 Keluar</div>
-      </div>
-    </div>
-
-  </div>
-
+<div class="dropdown" id="dropdown">
+<div id="userEmail"></div>
+<hr>
+<div onclick="logout()">🚪 Logout</div>
+</div>
+</div>
+</div>
 </div>
 
 <div class="container">
 <div class="grid">
 
-<div class="card folder" data-name="eko pro" onclick="openFolder('https://drive.google.com/drive/folders/1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">
-  <div class="icon">📁</div>EKO PRO
-</div>
+<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">📁 EKO PRO</div>
+<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg')">📁 EKO 36</div>
+<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">📁 EKO 03</div>
+<div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">📁 CV PROF</div>
 
-<div class="card folder" data-name="eko 36" onclick="openFolder('https://drive.google.com/drive/folders/18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg')">
-  <div class="icon">📁</div>EKO 36
-</div>
-
-<div class="card folder" data-name="eko 03" onclick="openFolder('https://drive.google.com/drive/folders/1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">
-  <div class="icon">📁</div>EKO 03
-</div>
-
-<div class="card folder" data-name="cv prof" onclick="openFolder('https://drive.google.com/drive/folders/1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">
-  <div class="icon">📁</div>CV PROF
-</div>
+<!-- contoh preview gambar -->
+<div class="card" onclick="openImage('https://picsum.photos/800')">🖼️ Sample Image</div>
 
 </div>
+</div>
+
+<!-- VIEWER -->
+<div class="viewer" id="viewer">
+<button onclick="closeViewer()">⬅️</button>
+<iframe id="frame"></iframe>
+</div>
+
+<!-- GALLERY -->
+<div class="gallery" id="gallery" onclick="closeImage()">
+<img id="imgView">
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
 apiKey:"AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
@@ -221,77 +97,56 @@ const auth = getAuth(app);
 
 const avatar = document.getElementById("avatar");
 const dropdown = document.getElementById("dropdown");
-const userEmail = document.getElementById("userEmail");
+const emailBox = document.getElementById("userEmail");
+
+/* LOGIN GOOGLE */
+const provider = new GoogleAuthProvider();
+
+if(!auth.currentUser){
+signInWithPopup(auth, provider);
+}
 
 /* USER */
 onAuthStateChanged(auth,user=>{
-  if(!user){
-    location.href="index.html";
-  }else{
-    userEmail.innerText = user.email;
-
-    // 🔥 FOTO AVATAR RANDOM (bisa diganti nanti)
-    avatar.innerHTML = '<img src="https://i.pravatar.cc/100" />';
-  }
+if(user){
+emailBox.innerText = user.email;
+avatar.innerHTML = `<img src="${user.photoURL}">`;
+}else{
+signInWithPopup(auth, provider);
+}
 });
 
 /* DROPDOWN */
-avatar.onclick = ()=>{
-  dropdown.classList.toggle("show");
-};
-
-window.onclick = (e)=>{
-  if(!e.target.closest(".profile")){
-    dropdown.classList.remove("show");
-  }
-};
+avatar.onclick = ()=>dropdown.classList.toggle("show");
 
 /* LOGOUT */
-window.logout = ()=>{
-  signOut(auth).then(()=> location.href="index.html");
-};
+window.logout = ()=>signOut(auth);
 
-/* FOLDER */
+/* FOLDER (EMBED) */
 window.openFolder = (url)=>{
-  window.open(url,"_blank");
+document.getElementById("viewer").classList.add("active");
+document.getElementById("frame").src = url;
 };
 
-/* SEARCH */
-const search = document.getElementById("search");
-const cards = document.querySelectorAll(".card");
+window.closeViewer = ()=>{
+document.getElementById("viewer").classList.remove("active");
+};
 
-search.addEventListener("input", function(){
-  const value = this.value.toLowerCase();
+/* IMAGE */
+window.openImage = (src)=>{
+gallery.classList.add("active");
+imgView.src = src;
+};
 
-  cards.forEach(card=>{
-    if(card.classList.contains("folder")){
-      card.style.display="block";
-      return;
-    }
-
-    const name = card.dataset.name || "";
-    card.style.display = name.includes(value) ? "block" : "none";
-  });
-});
+window.closeImage = ()=>{
+gallery.classList.remove("active");
+};
 
 /* THEME */
 const toggle = document.getElementById("themeToggle");
 
-if(localStorage.getItem("theme")==="light"){
-  document.body.classList.add("light");
-  toggle.innerText="☀️";
-}
-
 toggle.onclick = ()=>{
-  document.body.classList.toggle("light");
-
-  if(document.body.classList.contains("light")){
-    localStorage.setItem("theme","light");
-    toggle.innerText="☀️";
-  }else{
-    localStorage.setItem("theme","dark");
-    toggle.innerText="🌙";
-  }
+document.body.classList.toggle("light");
 };
 </script>
 
