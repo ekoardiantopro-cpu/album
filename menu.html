@@ -37,6 +37,7 @@ body{margin:0;font-family:Arial;background:#121212;color:white;}
   background:#2a2a2a;
 }
 
+/* PROFILE */
 .profile{position:relative;}
 
 .avatar{
@@ -66,6 +67,7 @@ body{margin:0;font-family:Arial;background:#121212;color:white;}
 
 .dropdown.show{display:block;}
 
+/* GRID */
 .container{padding:15px;}
 
 .grid{
@@ -82,6 +84,7 @@ body{margin:0;font-family:Arial;background:#121212;color:white;}
   cursor:pointer;
 }
 
+/* VIEWER */
 .viewerPage{
   position:fixed;
   top:0;
@@ -105,6 +108,7 @@ body{margin:0;font-family:Arial;background:#121212;color:white;}
   border:none;
 }
 
+/* GALLERY */
 .gallery{
   position:fixed;
   width:100%;
@@ -131,6 +135,7 @@ body.light .card{background:#fff;}
 
 <body>
 
+<!-- TOPBAR -->
 <div class="topbar">
 <input class="search" id="search" placeholder="Cari file...">
 
@@ -149,6 +154,7 @@ body.light .card{background:#fff;}
 </div>
 </div>
 
+<!-- GRID -->
 <div class="container">
 <div class="grid">
 
@@ -157,7 +163,6 @@ body.light .card{background:#fff;}
 <div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">📁 EKO 03</div>
 <div class="card" onclick="openFolder('https://drive.google.com/drive/folders/1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">📁 CV PROF</div>
 
-<!-- contoh preview -->
 <div class="card" onclick="openImage('https://picsum.photos/800')">🖼️ Preview Image</div>
 
 </div>
@@ -180,8 +185,6 @@ body.light .card{background:#fff;}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -195,36 +198,38 @@ appId:"1:112694935492:web:e5696cae239c50367eee91"
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
 
 const avatar = document.getElementById("avatar");
 const dropdown = document.getElementById("dropdown");
 const userEmail = document.getElementById("userEmail");
 
-/* LOGIN GOOGLE */
-if(!auth.currentUser){
-  signInWithPopup(auth, provider);
-}
-
-/* USER */
+/* ✅ CEK USER (TANPA AUTO LOGIN) */
 onAuthStateChanged(auth, user=>{
   if(user){
     userEmail.innerText = user.email;
 
-    // ✅ FOTO ASLI GOOGLE
-    avatar.innerHTML = `<img src="${user.photoURL}">`;
+    if(user.photoURL){
+      avatar.innerHTML = `<img src="${user.photoURL}">`;
+    }else{
+      avatar.innerHTML = user.email.charAt(0).toUpperCase();
+    }
+
   }else{
-    signInWithPopup(auth, provider);
+    location.href = "index.html";
   }
 });
 
 /* DROPDOWN */
 avatar.onclick = ()=> dropdown.classList.toggle("show");
 
-/* LOGOUT */
-window.logout = ()=> signOut(auth);
+/* LOGOUT FIX */
+window.logout = ()=>{
+  signOut(auth).then(()=>{
+    location.href = "index.html";
+  });
+};
 
-/* 📂 FOLDER DALAM WEB (FIX EMBED) */
+/* FOLDER EMBED */
 window.openFolder = (url)=>{
   const id = url.split("/folders/")[1];
   const embed = `https://drive.google.com/embeddedfolderview?id=${id}#grid`;
@@ -237,7 +242,7 @@ window.closeViewer = ()=>{
   document.getElementById("viewerPage").classList.remove("active");
 };
 
-/* 🖼️ IMAGE */
+/* IMAGE */
 window.openImage = (src)=>{
   document.getElementById("gallery").classList.add("active");
   document.getElementById("imgView").src = src;
@@ -247,7 +252,7 @@ window.closeImage = ()=>{
   document.getElementById("gallery").classList.remove("active");
 };
 
-/* 🌙 THEME */
+/* THEME */
 const toggle = document.getElementById("themeToggle");
 
 toggle.onclick = ()=>{
