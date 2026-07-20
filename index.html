@@ -8,18 +8,30 @@
 
 <header>
   <h2>📁 EKO Drive Manager</h2>
-  <button id="loginBtn">Login</button>
   <button id="logoutBtn" style="display:none;">Logout</button>
 </header>
 
-<div id="folders">
-  <button data-id="1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT">EKO PRO</button>
-  <button data-id="18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg">EKO 36</button>
-  <button data-id="1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW">EKO 03</button>
-  <button data-id="1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv">CV PROF</button>
+<!-- LOGIN -->
+<div id="loginBox">
+  <h3>Login</h3>
+  <input type="email" id="email" placeholder="Email"><br><br>
+  <input type="password" id="password" placeholder="Password"><br><br>
+  <button onclick="login()">Login</button>
 </div>
 
-<div id="fileGrid"></div>
+<!-- APP -->
+<div id="app" style="display:none;">
+
+  <div id="folders">
+    <button onclick="loadFolder('1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">EKO PRO</button>
+    <button onclick="loadFolder('18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg')">EKO 36</button>
+    <button onclick="loadFolder('1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">EKO 03</button>
+    <button onclick="loadFolder('1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">CV PROF</button>
+  </div>
+
+  <div id="fileGrid"></div>
+
+</div>
 
 <script type="module" src="app.js"></script>
 </body>
