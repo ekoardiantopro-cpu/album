@@ -1,79 +1,99 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
+  signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+// 🔥 CONFIG FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
   authDomain: "album-ff46e.firebaseapp.com",
   projectId: "album-ff46e",
-  storageBucket: "album-ff46e.firebasestorage.app",
-  messagingSenderId: "112694935492",
   appId: "1:112694935492:web:e5696cae239c50367eee91"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-const provider = new GoogleAuthProvider();
-provider.addScope("https://www.googleapis.com/auth/drive.readonly");
+// 🔑 API KEY GOOGLE DRIVE
+const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
 
-let accessToken = null;
+// =====================
+// 🔐 LOGIN
+// =====================
+window.login = async () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-document.getElementById("loginBtn").onclick = async () => {
-  const result = await signInWithPopup(auth, provider);
-  accessToken = GoogleAuthProvider.credentialFromResult(result).accessToken;
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (err) {
+    alert("Login gagal: " + err.message);
+  }
 };
 
+// =====================
+// 🚪 LOGOUT
+// =====================
 document.getElementById("logoutBtn").onclick = () => {
   signOut(auth);
 };
 
+// =====================
+// 🔄 STATE USER
+// =====================
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    document.getElementById("loginBtn").style.display = "none";
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("app").style.display = "block";
     document.getElementById("logoutBtn").style.display = "block";
   } else {
-    document.getElementById("loginBtn").style.display = "block";
+    document.getElementById("loginBox").style.display = "block";
+    document.getElementById("app").style.display = "none";
+    document.getElementById("logoutBtn").style.display = "none";
   }
 });
 
-document.querySelectorAll("#folders button").forEach(btn => {
-  btn.onclick = () => loadFolder(btn.dataset.id);
-});
+// =====================
+// 📂 LOAD GOOGLE DRIVE (PUBLIC)
+// =====================
+window.loadFolder = async (folderId) => {
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&key=${API_KEY}`
+    );
 
-async function loadFolder(folderId) {
-  if (!accessToken) {
-    alert("Login dulu!");
-    return;
-  }
+    const data = await res.json();
 
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+    if (!data.files) {
+      alert("Gagal ambil data dari Google Drive");
+      return;
     }
-  );
 
-  const data = await res.json();
-  const grid = document.getElementById("fileGrid");
-  grid.innerHTML = "";
+    const grid = document.getElementById("fileGrid");
+    grid.innerHTML = "";
 
-  data.files.forEach(file => {
-    const div = document.createElement("div");
-    div.className = "file";
+    data.files.forEach(file => {
+      const div = document.createElement("div");
+      div.className = "file";
 
-    div.innerHTML = `
-      <img src="https://drive.google.com/thumbnail?id=${file.id}">
-      <p>${file.name}</p>
-    `;
+      div.innerHTML = `
+        <img src="https://drive.google.com/thumbnail?id=${file.id}" width="100%">
+        <p>${file.name}</p>
+      `;
 
-    grid.appendChild(div);
-  });
-}
+      // klik = buka file di tab baru
+      div.onclick = () => {
+        window.open(`https://drive.google.com/file/d/${file.id}/view`, "_blank");
+      };
+
+      grid.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error(err);
+    alert("Error ambil file");
+  }
+};
