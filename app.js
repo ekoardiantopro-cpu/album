@@ -1,99 +1,65 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+let historyStack = [];
 
-// 🔥 CONFIG FIREBASE
-const firebaseConfig = {
-  apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
-  authDomain: "album-ff46e.firebaseapp.com",
-  projectId: "album-ff46e",
-  appId: "1:112694935492:web:e5696cae239c50367eee91"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-// 🔑 API KEY GOOGLE DRIVE
-const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
-
-// =====================
-// 🔐 LOGIN
-// =====================
-window.login = async () => {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (err) {
-    alert("Login gagal: " + err.message);
-  }
-};
-
-// =====================
-// 🚪 LOGOUT
-// =====================
-document.getElementById("logoutBtn").onclick = () => {
-  signOut(auth);
-};
-
-// =====================
-// 🔄 STATE USER
-// =====================
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    document.getElementById("logoutBtn").style.display = "block";
-  } else {
-    document.getElementById("loginBox").style.display = "block";
-    document.getElementById("app").style.display = "none";
-    document.getElementById("logoutBtn").style.display = "none";
-  }
-});
-
-// =====================
-// 📂 LOAD GOOGLE DRIVE (PUBLIC)
-// =====================
+// LOAD FOLDER
 window.loadFolder = async (folderId) => {
-  try {
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&key=${API_KEY}`
-    );
+  historyStack.push(folderId);
 
-    const data = await res.json();
+  document.getElementById("backBtn").style.display =
+    historyStack.length > 1 ? "block" : "none";
 
-    if (!data.files) {
-      alert("Gagal ambil data dari Google Drive");
-      return;
-    }
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&key=${API_KEY}`
+  );
 
-    const grid = document.getElementById("fileGrid");
-    grid.innerHTML = "";
+  const data = await res.json();
+  const grid = document.getElementById("fileGrid");
+  grid.innerHTML = "";
 
-    data.files.forEach(file => {
-      const div = document.createElement("div");
-      div.className = "file";
+  data.files.forEach(file => {
+    const div = document.createElement("div");
+    div.className = "file";
 
-      div.innerHTML = `
-        <img src="https://drive.google.com/thumbnail?id=${file.id}" width="100%">
-        <p>${file.name}</p>
-      `;
+    const isFolder = file.mimeType === "application/vnd.google-apps.folder";
 
-      // klik = buka file di tab baru
-      div.onclick = () => {
-        window.open(`https://drive.google.com/file/d/${file.id}/view`, "_blank");
-      };
+    div.innerHTML = `
+      <img src="${
+        isFolder
+          ? "https://cdn-icons-png.flaticon.com/512/716/716784.png"
+          : `https://drive.google.com/thumbnail?id=${file.id}`
+      }" width="100%">
+      <p>${file.name}</p>
+    `;
 
-      grid.appendChild(div);
-    });
+    div.onclick = () => {
+      if (isFolder) {
+        loadFolder(file.id);
+      } else {
+        openViewer(file.id);
+      }
+    };
 
-  } catch (err) {
-    console.error(err);
-    alert("Error ambil file");
-  }
+    grid.appendChild(div);
+  });
+};
+
+// BACK BUTTON
+window.goBack = () => {
+  historyStack.pop();
+  const prev = historyStack.pop();
+  if (prev) loadFolder(prev);
+};
+
+// =======================
+// 📄 VIEWER (NO TAB BARU)
+// =======================
+window.openViewer = (fileId) => {
+  document.getElementById("viewer").style.display = "block";
+
+  document.getElementById("viewerFrame").src =
+    `https://drive.google.com/file/d/${fileId}/preview`;
+};
+
+window.closeViewer = () => {
+  document.getElementById("viewer").style.display = "none";
+  document.getElementById("viewerFrame").src = "";
 };
