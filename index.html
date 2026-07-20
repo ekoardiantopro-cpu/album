@@ -2,58 +2,236 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Drive App</title>
+<title>Drive PRO FINAL</title>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <style>
-body{margin:0;font-family:Arial;background:#121212;color:white;}
-#splash{position:fixed;width:100%;height:100%;display:flex;justify-content:center;align-items:center;flex-direction:column;background:#121212;}
-.loader{width:40px;height:40px;border:4px solid #333;border-top:4px solid #4CAF50;border-radius:50%;animation:spin 1s linear infinite;margin-top:10px;}
-@keyframes spin{100%{transform:rotate(360deg);}}
-.box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#1e1e1e;padding:30px;border-radius:15px;width:300px;text-align:center;}
-input,button{width:100%;padding:10px;margin-top:10px;border:none;border-radius:8px;}
-input{background:#2a2a2a;color:white;}
-button{background:#4CAF50;color:white;}
+body{
+  margin:0;
+  font-family:Arial;
+  background:#121212;
+  color:white;
+}
+
+.topbar{
+  height:60px;
+  background:#1f1f1f;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0 15px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:15px;
+  padding:15px;
+}
+
+.card{
+  background:#1e1e1e;
+  padding:15px;
+  border-radius:12px;
+  text-align:center;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.card:hover{background:#2a2a2a;}
+
+.viewer{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:#000;
+  display:none;
+  flex-direction:column;
+}
+
+.viewer.active{display:flex;}
+
+.viewerTop{
+  padding:10px;
+  background:#1f1f1f;
+}
+
+.viewer img, .viewer iframe, .viewer video{
+  width:100%;
+  height:100%;
+  border:none;
+}
+
+.loginBox{
+  display:flex;
+  justify-content:center;
+  margin-top:40px;
+}
 </style>
 </head>
+
 <body>
 
-<div id="splash">
-<h1>📂 Drive App</h1>
-<div class="loader"></div>
+<div class="topbar">
+  <b>Drive PRO</b>
+  <button onclick="logout()">Logout</button>
 </div>
 
-<div class="box">
-<h2>Login</h2>
-<form onsubmit="login(event)">
-<input type="email" id="email" placeholder="Email" required>
-<input type="password" id="pw" placeholder="Password" required>
-<button type="submit">Masuk</button>
-</form>
-<p id="msg"></p>
+<div class="loginBox" id="login"></div>
+<div class="grid" id="grid"></div>
+
+<div class="viewer" id="viewer">
+  <div class="viewerTop">
+    <button onclick="closeViewer()">⬅️ Kembali</button>
+  </div>
+  <div id="preview"></div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+<script>
 
-const firebaseConfig = {
-apiKey:"AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
-authDomain:"album-ff46e.firebaseapp.com",
-projectId:"album-ff46e",
-appId:"1:112694935492:web:e5696cae239c50367eee91"
+const CLIENT_ID = "112694935492-6hoanmgu4mimnvkons1s0a6rn3l0itrp.apps.googleusercontent.com";
+const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
+
+let tokenClient;
+let accessToken = null;
+
+/* INIT */
+window.onload = () => {
+
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: handleLogin
+  });
+
+  google.accounts.id.renderButton(
+    document.getElementById("login"),
+    { theme: "outline", size: "large" }
+  );
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: "https://www.googleapis.com/auth/drive.readonly",
+    callback: (resp) => {
+
+      if(resp.error){
+        alert("Login gagal");
+        return;
+      }
+
+      accessToken = resp.access_token;
+      loadFiles();
+    },
+  });
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-setTimeout(()=>{document.getElementById("splash").style.display="none";},1500);
-
-window.login = function(e){
-e.preventDefault();
-msg.innerText="Loading...";
-signInWithEmailAndPassword(auth,email.value,pw.value)
-.then(()=>location.href="menu.html")
-.catch(()=>msg.innerText="Login gagal!");
+/* LOGIN */
+function handleLogin(){
+  tokenClient.requestAccessToken();
 }
+
+/* LOAD FILE */
+async function loadFiles(){
+
+  document.getElementById("grid").innerHTML = "⏳ Loading...";
+
+  try{
+
+    const res = await fetch(
+      "https://www.googleapis.com/drive/v3/files?key="+API_KEY,
+      {
+        headers:{
+          Authorization: "Bearer "+accessToken
+        }
+      }
+    );
+
+    const data = await res.json();
+
+    console.log("FULL RESPONSE:", data);
+
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+
+    if(!data.files || data.files.length === 0){
+      grid.innerHTML = "📂 Tidak ada file";
+      return;
+    }
+
+    data.files.forEach(file=>{
+      const div = document.createElement("div");
+      div.className = "card";
+
+      const name = file.name.toLowerCase();
+
+      /* FOLDER */
+      if(file.mimeType === "application/vnd.google-apps.folder"){
+        div.innerHTML = "📁<br>"+file.name;
+      }
+
+      /* IMAGE */
+      else if(name.match(/\.(jpg|jpeg|png|gif|webp)$/)){
+        div.innerHTML = "🖼️<br>"+file.name;
+        div.onclick = ()=> openImage(file.id);
+      }
+
+      /* VIDEO */
+      else if(name.match(/\.(mp4|mov|webm)$/)){
+        div.innerHTML = "🎬<br>"+file.name;
+        div.onclick = ()=> openVideo(file.id);
+      }
+
+      /* PDF */
+      else if(file.mimeType.includes("pdf")){
+        div.innerHTML = "📄<br>"+file.name;
+        div.onclick = ()=> openPDF(file.id);
+      }
+
+      else{
+        div.innerHTML = "📄<br>"+file.name;
+      }
+
+      grid.appendChild(div);
+    });
+
+  }catch(e){
+    document.getElementById("grid").innerHTML = "❌ Error load data";
+  }
+}
+
+/* PREVIEW */
+function openImage(id){
+  document.getElementById("viewer").classList.add("active");
+  document.getElementById("preview").innerHTML =
+  `<img src="https://lh3.googleusercontent.com/d/${id}">`;
+}
+
+function openVideo(id){
+  document.getElementById("viewer").classList.add("active");
+  document.getElementById("preview").innerHTML =
+  `<video controls autoplay>
+    <source src="https://drive.google.com/uc?id=${id}">
+  </video>`;
+}
+
+function openPDF(id){
+  document.getElementById("viewer").classList.add("active");
+  document.getElementById("preview").innerHTML =
+  `<iframe src="https://drive.google.com/file/d/${id}/preview"></iframe>`;
+}
+
+/* CLOSE */
+function closeViewer(){
+  document.getElementById("viewer").classList.remove("active");
+}
+
+/* LOGOUT */
+function logout(){
+  accessToken = null;
+  google.accounts.id.disableAutoSelect();
+  location.reload();
+}
+
 </script>
 
 </body>
