@@ -1,53 +1,33 @@
 body {
-  margin: 0;
-  font-family: 'Segoe UI';
+  font-family: Arial;
   background: #0f172a;
   color: white;
+  text-align: center;
 }
 
-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 15px;
-  background: #1e293b;
+input {
+  padding: 10px;
+  width: 200px;
 }
 
 button {
-  padding: 10px 15px;
-  border-radius: 8px;
-  border: none;
+  padding: 10px;
   background: #3b82f6;
+  border: none;
   color: white;
+  border-radius: 8px;
   cursor: pointer;
-}
-
-#folders {
-  padding: 15px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
 }
 
 #fileGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
+  grid-template-columns: repeat(auto-fill, 150px);
   gap: 15px;
   padding: 20px;
 }
 
 .file {
   background: #1e293b;
-  border-radius: 12px;
   padding: 10px;
-  text-align: center;
-  transition: 0.3s;
-}
-
-.file:hover {
-  transform: scale(1.05);
-}
-
-.file img {
-  width: 100%;
-  border-radius: 8px;
+  border-radius: 10px;
 }
