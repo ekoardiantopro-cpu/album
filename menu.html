@@ -2,11 +2,11 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Drive Premium</title>
+<title>Drive PRO</title>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <style>
-*{transition: background 0.3s, color 0.3s;}
-
 body{
   margin:0;
   font-family:Arial;
@@ -14,67 +14,37 @@ body{
   color:white;
 }
 
-/* TOPBAR */
 .topbar{
   height:60px;
   background:#1f1f1f;
   display:flex;
-  align-items:center;
   justify-content:space-between;
+  align-items:center;
   padding:0 15px;
 }
 
-.search{
-  width:200px;
-  padding:8px;
-  border-radius:8px;
-  border:none;
-  background:#2a2a2a;
-  color:white;
-}
-
 .user{
-  font-size:12px;
-  color:#aaa;
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 
-/* THEME BUTTON */
-.theme-btn{
-  font-size:18px;
-  cursor:pointer;
-  padding:6px 10px;
-  border-radius:8px;
-  background:#2a2a2a;
+.avatar{
+  width:35px;
+  height:35px;
+  border-radius:50%;
+  overflow:hidden;
 }
 
-.theme-btn:hover{
-  background:#3a3a3a;
-}
-
-body.light .theme-btn{
-  background:#ddd;
-}
-
-/* BUTTON */
-.btn{
-  background:#e53935;
-  border:none;
-  padding:6px 10px;
-  border-radius:8px;
-  color:white;
-  cursor:pointer;
-  font-size:12px;
-}
-
-/* GRID */
-.container{
-  padding:15px;
+.avatar img{
+  width:100%;
 }
 
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-  gap:12px;
+  gap:15px;
+  padding:15px;
 }
 
 .card{
@@ -83,206 +53,200 @@ body.light .theme-btn{
   border-radius:12px;
   text-align:center;
   cursor:pointer;
+  transition:.2s;
 }
 
 .card:hover{
-  transform:translateY(-3px);
+  background:#2a2a2a;
 }
 
-.hidden{
-  display:none;
-}
-
-/* ICON */
-.icon{
-  font-size:40px;
-}
-
-/* VIEWER */
-.viewerPage{
+.viewer{
   position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:#121212;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:#000;
   display:none;
   flex-direction:column;
 }
 
-.viewerPage.active{
-  display:flex;
-}
+.viewer.active{display:flex;}
 
 .viewerTop{
-  padding:10px;
   background:#1f1f1f;
-  display:flex;
-  justify-content:space-between;
+  padding:10px;
 }
 
-iframe{
+.viewer img,.viewer iframe{
   flex:1;
+  width:100%;
   border:none;
 }
 
-/* LIGHT MODE */
-body.light{
-  background:#f5f5f5;
-  color:#111;
-}
-
-body.light .topbar{
-  background:#fff;
-}
-
-body.light .card{
-  background:#fff;
-}
-
-body.light .search{
-  background:#eee;
-  color:#000;
+.loginBox{
+  display:flex;
+  justify-content:center;
+  margin-top:40px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
+  <b>Drive PRO</b>
 
-  <input class="search" id="search" placeholder="Cari file...">
-
-  <div style="display:flex;align-items:center;gap:10px;">
-    
-    <!-- ICON DARK/LIGHT -->
-    <span id="themeToggle" class="theme-btn">🌙</span>
-
-    <div class="user" id="user"></div>
-
-    <button onclick="logout()" class="btn">Keluar</button>
-
+  <div class="user" id="userBox" style="display:none;">
+    <div class="avatar" id="avatar"></div>
+    <div id="username"></div>
   </div>
-
 </div>
 
-<!-- GRID -->
-<div class="container">
-<div class="grid">
+<div class="loginBox" id="login"></div>
 
-<div class="card folder" data-name="eko pro" onclick="openFolder('https://drive.google.com/drive/folders/1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">
-  <div class="icon">📁</div>
-  <div>EKO PRO</div>
+<div class="grid" id="grid"></div>
+
+<div class="viewer" id="viewer">
+  <div class="viewerTop">
+    <button onclick="closeViewer()">⬅️ Kembali</button>
+  </div>
+  <div id="preview"></div>
 </div>
 
-<div class="card folder" data-name="eko 36" onclick="openFolder('https://drive.google.com/drive/folders/18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg')">
-  <div class="icon">📁</div>
-  <div>EKO 36</div>
-</div>
+<script>
 
-<div class="card folder" data-name="eko 03" onclick="openFolder('https://drive.google.com/drive/folders/1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">
-  <div class="icon">📁</div>
-  <div>EKO 03</div>
-</div>
+const CLIENT_ID = "PASTE_CLIENT_ID_KAMU";
+const API_KEY = "PASTE_API_KEY_KAMU";
 
-<div class="card folder" data-name="cv prof" onclick="openFolder('https://drive.google.com/drive/folders/1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">
-  <div class="icon">📁</div>
-  <div>CV PROF</div>
-</div>
+let tokenClient;
+let accessToken = null;
+let currentFolder = "root";
+let historyStack = [];
 
-</div>
-</div>
+/* INIT GOOGLE */
+window.onload = () => {
 
-<!-- VIEWER -->
-<div class="viewerPage" id="viewerPage">
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: handleLogin
+  });
 
-<div class="viewerTop">
-  <button class="btn" onclick="closeViewer()">⬅️ Kembali</button>
-  <button class="btn" onclick="logout()">Logout</button>
-</div>
+  google.accounts.id.renderButton(
+    document.getElementById("login"),
+    { theme: "outline", size: "large" }
+  );
 
-<iframe id="viewer"></iframe>
-
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-const firebaseConfig = {
-apiKey:"AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
-authDomain:"album-ff46e.firebaseapp.com",
-projectId:"album-ff46e",
-appId:"1:112694935492:web:e5696cae239c50367eee91"
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: "https://www.googleapis.com/auth/drive.readonly",
+    callback: (resp) => {
+      accessToken = resp.access_token;
+      loadFolder("root");
+    },
+  });
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+/* LOGIN */
+function handleLogin(response){
+  const data = parseJwt(response.credential);
 
-/* USER */
-onAuthStateChanged(auth,user=>{
-  if(!user){
-    location.href="index.html";
+  document.getElementById("userBox").style.display = "flex";
+  document.getElementById("username").innerText = data.name;
+  document.getElementById("avatar").innerHTML =
+    `<img src="${data.picture}">`;
+
+  document.getElementById("login").style.display = "none";
+
+  tokenClient.requestAccessToken();
+}
+
+/* JWT PARSE */
+function parseJwt (token) {
+  return JSON.parse(atob(token.split('.')[1]));
+}
+
+/* LOAD FILE */
+async function loadFolder(folderId){
+
+  currentFolder = folderId;
+
+  let url;
+
+  if(folderId === "root"){
+    url = "https://www.googleapis.com/drive/v3/files?q='root'+in+parents&key="+API_KEY;
   }else{
-    document.getElementById("user").innerText=user.email;
+    url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&key=${API_KEY}`;
   }
-});
 
-/* SEARCH */
-const search = document.getElementById("search");
-const cards = document.querySelectorAll(".card");
-
-search.addEventListener("input", function(){
-  const value = this.value.toLowerCase().trim();
-
-  cards.forEach(card=>{
-    const name = (card.getAttribute("data-name") || "").toLowerCase();
-
-    if(card.classList.contains("folder")){
-      card.style.display = "block";
-      return;
-    }
-
-    if(name.includes(value)){
-      card.style.display = "block";
-    }else{
-      card.style.display = "none";
+  const res = await fetch(url,{
+    headers:{
+      Authorization: "Bearer "+accessToken
     }
   });
-});
 
-/* FOLDER */
-window.openFolder = function(url){
-  window.open(url,"_blank");
+  const data = await res.json();
+
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  data.files.forEach(file=>{
+    const div = document.createElement("div");
+    div.className = "card";
+
+    /* FOLDER */
+    if(file.mimeType === "application/vnd.google-apps.folder"){
+      div.innerHTML = "📁<br>"+file.name;
+      div.onclick = ()=>{
+        historyStack.push(currentFolder);
+        loadFolder(file.id);
+      };
+    }
+
+    /* IMAGE */
+    else if(file.mimeType.includes("image")){
+      div.innerHTML = "🖼️<br>"+file.name;
+      div.onclick = ()=> openImage(file.id);
+    }
+
+    /* PDF */
+    else if(file.mimeType.includes("pdf")){
+      div.innerHTML = "📄<br>"+file.name;
+      div.onclick = ()=> openPDF(file.id);
+    }
+
+    /* OTHER */
+    else{
+      div.innerHTML = "📄<br>"+file.name;
+    }
+
+    grid.appendChild(div);
+  });
 }
 
-/* LOGOUT */
-window.logout = function(){
-  signOut(auth).then(()=> location.href="index.html");
+/* PREVIEW */
+function openImage(id){
+  document.getElementById("viewer").classList.add("active");
+  document.getElementById("preview").innerHTML =
+  `<img src="https://drive.google.com/uc?id=${id}">`;
 }
 
-/* THEME TOGGLE */
-const toggle = document.getElementById("themeToggle");
-
-if(localStorage.getItem("theme") === "light"){
-  document.body.classList.add("light");
-  toggle.innerText = "☀️";
-}else{
-  toggle.innerText = "🌙";
+function openPDF(id){
+  document.getElementById("viewer").classList.add("active");
+  document.getElementById("preview").innerHTML =
+  `<iframe src="https://drive.google.com/file/d/${id}/preview"></iframe>`;
 }
 
-toggle.onclick = function(){
-  document.body.classList.toggle("light");
+/* CLOSE */
+function closeViewer(){
+  document.getElementById("viewer").classList.remove("active");
+}
 
-  if(document.body.classList.contains("light")){
-    localStorage.setItem("theme","light");
-    toggle.innerText = "☀️";
-  }else{
-    localStorage.setItem("theme","dark");
-    toggle.innerText = "🌙";
+/* BACK */
+function goBack(){
+  if(historyStack.length > 0){
+    loadFolder(historyStack.pop());
   }
 }
+
 </script>
 
 </body>
