@@ -6,7 +6,9 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// FIREBASE CONFIG
+// =======================
+// 🔥 FIREBASE CONFIG
+// =======================
 const firebaseConfig = {
   apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
   authDomain: "album-ff46e.firebaseapp.com",
@@ -17,45 +19,65 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// GOOGLE DRIVE API
+// =======================
+// 🔑 GOOGLE DRIVE API
+// =======================
 const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
+
+// =======================
+// 🎯 ELEMENT DOM (FIX ERROR UTAMA)
+// =======================
+const loginBox = document.getElementById("loginBox");
+const appContainer = document.getElementById("app");
+const logoutBtn = document.getElementById("logoutBtn");
+const fileGrid = document.getElementById("fileGrid");
+const viewer = document.getElementById("viewer");
+const viewerFrame = document.getElementById("viewerFrame");
+const backBtn = document.getElementById("backBtn");
 
 let historyStack = [];
 
-document.addEventListener("DOMContentLoaded", () => {
+// =======================
+// 🔐 EVENT
+// =======================
+document.getElementById("loginBtn").onclick = async () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-  document.getElementById("loginBtn").onclick = async () => {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (err) {
+    alert(err.message);
+  }
+};
 
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
+logoutBtn.onclick = () => signOut(auth);
 
-  document.getElementById("logoutBtn").onclick = () => signOut(auth);
-
-  document.querySelectorAll("#folders button").forEach(btn => {
-    btn.onclick = () => loadFolder(btn.dataset.id);
-  });
-
-  document.getElementById("backBtn").onclick = goBack;
-  document.getElementById("closeViewer").onclick = closeViewer;
+document.querySelectorAll("#folders button").forEach(btn => {
+  btn.onclick = () => loadFolder(btn.dataset.id);
 });
 
+backBtn.onclick = goBack;
+document.getElementById("closeViewer").onclick = closeViewer;
+
+// =======================
+// 🔄 AUTH STATE
+// =======================
 onAuthStateChanged(auth, (user) => {
   if (user) {
     loginBox.style.display = "none";
-    app.style.display = "block";
+    appContainer.style.display = "block";
     logoutBtn.style.display = "block";
   } else {
     loginBox.style.display = "block";
-    app.style.display = "none";
+    appContainer.style.display = "none";
+    logoutBtn.style.display = "none";
   }
 });
 
+// =======================
+// 📂 LOAD FOLDER
+// =======================
 async function loadFolder(folderId) {
   historyStack.push(folderId);
 
@@ -104,12 +126,18 @@ async function loadFolder(folderId) {
   });
 }
 
+// =======================
+// 🔙 BACK
+// =======================
 function goBack() {
   historyStack.pop();
   const prev = historyStack.pop();
   if (prev) loadFolder(prev);
 }
 
+// =======================
+// 📄 VIEWER
+// =======================
 function openViewer(fileId) {
   viewer.style.display = "block";
   viewerFrame.src = `https://drive.google.com/file/d/${fileId}/preview`;
