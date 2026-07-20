@@ -6,7 +6,6 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// 🔥 FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
   authDomain: "album-ff46e.firebaseapp.com",
@@ -17,130 +16,100 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// 🔑 GOOGLE DRIVE API KEY
 const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
 
-// =======================
-// 🔐 LOGIN
-// =======================
-document.getElementById("loginBtn").onclick = async () => {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+// 🔥 WAJIB: tunggu DOM siap
+document.addEventListener("DOMContentLoaded", () => {
 
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (err) {
-    alert("Login gagal: " + err.message);
-  }
-};
+  // LOGIN
+  document.getElementById("loginBtn").onclick = async () => {
+    console.log("klik login"); // debug
 
-// =======================
-// 🚪 LOGOUT
-// =======================
-document.getElementById("logoutBtn").onclick = () => {
-  signOut(auth);
-};
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
 
-// =======================
-// 🔄 AUTH STATE
-// =======================
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // LOGOUT
+  document.getElementById("logoutBtn").onclick = () => signOut(auth);
+
+  // FOLDER BUTTON
+  document.querySelectorAll("#folders button").forEach(btn => {
+    btn.onclick = () => loadFolder(btn.dataset.id);
+  });
+
+  // BACK
+  document.getElementById("backBtn").onclick = goBack;
+
+  // CLOSE VIEWER
+  document.getElementById("closeViewer").onclick = closeViewer;
+});
+
+// AUTH STATE
 onAuthStateChanged(auth, (user) => {
   if (user) {
     document.getElementById("loginBox").style.display = "none";
     document.getElementById("app").style.display = "block";
-    document.getElementById("logoutBtn").style.display = "block";
   } else {
     document.getElementById("loginBox").style.display = "block";
     document.getElementById("app").style.display = "none";
-    document.getElementById("logoutBtn").style.display = "none";
   }
 });
 
-// =======================
-// 📂 NAVIGATION
-// =======================
+// NAVIGATION
 let historyStack = [];
 
-// tombol folder utama
-document.querySelectorAll("#folders button").forEach(btn => {
-  btn.onclick = () => loadFolder(btn.dataset.id);
-});
-
-// tombol back
-document.getElementById("backBtn").onclick = () => {
-  historyStack.pop();
-  const prev = historyStack.pop();
-  if (prev) loadFolder(prev);
-};
-
-// =======================
-// 📂 LOAD FOLDER
-// =======================
 async function loadFolder(folderId) {
   historyStack.push(folderId);
 
   document.getElementById("backBtn").style.display =
     historyStack.length > 1 ? "block" : "none";
 
-  try {
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&key=${API_KEY}`
-    );
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&key=${API_KEY}`
+  );
 
-    const data = await res.json();
-    const grid = document.getElementById("fileGrid");
-    grid.innerHTML = "";
+  const data = await res.json();
+  const grid = document.getElementById("fileGrid");
+  grid.innerHTML = "";
 
-    if (!data.files) {
-      grid.innerHTML = "<p>Gagal load file</p>";
-      return;
-    }
+  data.files.forEach(file => {
+    const div = document.createElement("div");
+    div.className = "file";
 
-    data.files.forEach(file => {
-      const div = document.createElement("div");
-      div.className = "file";
+    const isFolder =
+      file.mimeType === "application/vnd.google-apps.folder";
 
-      const isFolder =
-        file.mimeType === "application/vnd.google-apps.folder";
+    div.innerHTML = `
+      <p>${file.name}</p>
+    `;
 
-      div.innerHTML = `
-        <img src="${
-          isFolder
-            ? "https://cdn-icons-png.flaticon.com/512/716/716784.png"
-            : `https://drive.google.com/thumbnail?id=${file.id}`
-        }" width="100%">
-        <p>${file.name}</p>
-      `;
+    div.onclick = () => {
+      if (isFolder) loadFolder(file.id);
+      else openViewer(file.id);
+    };
 
-      div.onclick = () => {
-        if (isFolder) {
-          loadFolder(file.id);
-        } else {
-          openViewer(file.id);
-        }
-      };
-
-      grid.appendChild(div);
-    });
-
-  } catch (err) {
-    console.error(err);
-    alert("Error ambil data");
-  }
+    grid.appendChild(div);
+  });
 }
 
-// =======================
-// 📄 VIEWER
-// =======================
+function goBack() {
+  historyStack.pop();
+  const prev = historyStack.pop();
+  if (prev) loadFolder(prev);
+}
+
 function openViewer(fileId) {
   document.getElementById("viewer").style.display = "block";
-
   document.getElementById("viewerFrame").src =
     `https://drive.google.com/file/d/${fileId}/preview`;
 }
 
-// tombol close viewer
-document.getElementById("closeViewer").onclick = () => {
+function closeViewer() {
   document.getElementById("viewer").style.display = "none";
-  document.getElementById("viewerFrame").src = "";
-};
+}
