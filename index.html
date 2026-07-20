@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Drive PRO FINAL</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+body{margin:0;font-family:Arial;background:#121212;color:#fff}
+.topbar{height:60px;background:#1f1f1f;display:flex;justify-content:space-between;align-items:center;padding:0 15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;padding:20px}
+.card{background:#1e1e1e;border-radius:12px;padding:10px;cursor:pointer;transition:.2s}
+.card:hover{transform:translateY(-3px);background:#2b2b2b}
+.thumb{width:100%;height:160px;object-fit:cover;border-radius:8px;display:block}
+.name{margin-top:8px;font-size:14px;word-break:break-word}
+.viewer{position:fixed;inset:0;background:#000;display:none;flex-direction:column}
+.viewer.active{display:flex}
+.viewerTop{padding:10px;background:#1f1f1f}
+#preview{flex:1;display:flex;justify-content:center;align-items:center}
+#preview img{max-width:100%;max-height:calc(100vh - 60px);width:auto;height:auto;object-fit:contain}
+#preview video,#preview iframe{width:100%;height:100%;border:none}
+.loginBox{display:flex;justify-content:center;margin:20px}
+</style></head><body>
+<div class="topbar"><b>Drive PRO</b><button onclick="logout()">Logout</button></div>
+<div class="loginBox" id="login"></div><div class="grid" id="grid"></div>
+<div class="viewer" id="viewer"><div class="viewerTop"><button onclick="closeViewer()">⬅️ Kembali</button></div><div id="preview"></div></div>
+<script>
+const CLIENT_ID="112694935492-6hoanmgu4mimnvkons1s0a6rn3l0itrp.apps.googleusercontent.com";
+const API_KEY="AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
+let tokenClient,accessToken=null;
+window.onload=()=>{
+google.accounts.id.initialize({client_id:CLIENT_ID,callback:()=>tokenClient.requestAccessToken()});
+google.accounts.id.renderButton(document.getElementById("login"),{theme:"outline",size:"large"});
+tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:"https://www.googleapis.com/auth/drive.readonly",callback:r=>{if(!r.error){accessToken=r.access_token;loadFiles();}}});
+};
+async function loadFiles(){
+const grid=document.getElementById("grid");grid.innerHTML="Loading...";
+const res=await fetch("https://www.googleapis.com/drive/v3/files?fields=files(id,name,mimeType,thumbnailLink)&key="+API_KEY,{headers:{Authorization:"Bearer "+accessToken}});
+const data=await res.json();grid.innerHTML="";
+(data.files||[]).forEach(file=>{
+const c=document.createElement("div");c.className="card";
+let thumb=file.thumbnailLink||`https://drive.google.com/thumbnail?id=${file.id}&sz=w400`;
+if(file.mimeType.startsWith("image/")){
+c.innerHTML=`<img loading="lazy" class="thumb" src="${thumb}"><div class="name">${file.name}</div>`;
+c.onclick=()=>openImage(file.id);
+}else if(file.mimeType.startsWith("video/")){
+c.innerHTML=`<img loading="lazy" class="thumb" src="${thumb}"><div class="name">🎬 ${file.name}</div>`;
+c.onclick=()=>openVideo(file.id);
+}else if(file.mimeType.includes("pdf")){
+c.innerHTML=`<img loading="lazy" class="thumb" src="${thumb}"><div class="name">📄 ${file.name}</div>`;
+c.onclick=()=>openPDF(file.id);
+}else{
+c.innerHTML=`<div class="name">📄 ${file.name}</div>`;
+}
+grid.appendChild(c);
+});
+}
+function openImage(id){viewer.classList.add("active");preview.innerHTML=`<img src="https://lh3.googleusercontent.com/d/${id}=s2048">`;}
+function openVideo(id){viewer.classList.add("active");preview.innerHTML=`<video controls autoplay><source src="https://drive.google.com/uc?id=${id}"></video>`;}
+function openPDF(id){viewer.classList.add("active");preview.innerHTML=`<iframe src="https://drive.google.com/file/d/${id}/preview"></iframe>`;}
+function closeViewer(){viewer.classList.remove("active");preview.innerHTML="";}
+function logout(){accessToken=null;google.accounts.id.disableAutoSelect();location.reload();}
+</script></body></html>
