@@ -7,10 +7,14 @@
 </head>
 <body>
 
-<h2>📁 EKO Drive Manager</h2>
+<header>
+  <h2>📁 EKO Drive Manager</h2>
+  <button id="logoutBtn" style="display:none;">Logout</button>
+</header>
 
 <!-- LOGIN -->
 <div id="loginBox">
+  <h3>Login</h3>
   <input type="email" id="email" placeholder="Email"><br><br>
   <input type="password" id="password" placeholder="Password"><br><br>
   <button id="loginBtn">Login</button>
@@ -18,14 +22,14 @@
 
 <!-- APP -->
 <div id="app" style="display:none;">
-  <button id="logoutBtn">Logout</button>
-
   <div id="folders">
     <button data-id="1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT">EKO PRO</button>
     <button data-id="18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg">EKO 36</button>
+    <button data-id="1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW">EKO 03</button>
+    <button data-id="1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv">CV PROF</button>
   </div>
 
-  <button id="backBtn" style="display:none;">⬅️ Back</button>
+  <button id="backBtn" style="display:none;">⬅️ Kembali</button>
 
   <div id="fileGrid"></div>
 </div>
@@ -33,7 +37,7 @@
 <!-- VIEWER -->
 <div id="viewer" style="display:none;">
   <button id="closeViewer">❌ Tutup</button>
-  <iframe id="viewerFrame" width="100%" height="500"></iframe>
+  <iframe id="viewerFrame"></iframe>
 </div>
 
 <script type="module" src="app.js"></script>
