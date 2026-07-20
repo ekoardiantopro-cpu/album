@@ -6,6 +6,7 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+// FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
   authDomain: "album-ff46e.firebaseapp.com",
@@ -16,15 +17,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+// GOOGLE DRIVE API
 const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
 
-// 🔥 WAJIB: tunggu DOM siap
+let historyStack = [];
+
 document.addEventListener("DOMContentLoaded", () => {
 
-  // LOGIN
   document.getElementById("loginBtn").onclick = async () => {
-    console.log("klik login"); // debug
-
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
@@ -35,48 +35,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // LOGOUT
   document.getElementById("logoutBtn").onclick = () => signOut(auth);
 
-  // FOLDER BUTTON
   document.querySelectorAll("#folders button").forEach(btn => {
     btn.onclick = () => loadFolder(btn.dataset.id);
   });
 
-  // BACK
   document.getElementById("backBtn").onclick = goBack;
-
-  // CLOSE VIEWER
   document.getElementById("closeViewer").onclick = closeViewer;
 });
 
-// AUTH STATE
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("app").style.display = "block";
+    loginBox.style.display = "none";
+    app.style.display = "block";
+    logoutBtn.style.display = "block";
   } else {
-    document.getElementById("loginBox").style.display = "block";
-    document.getElementById("app").style.display = "none";
+    loginBox.style.display = "block";
+    app.style.display = "none";
   }
 });
-
-// NAVIGATION
-let historyStack = [];
 
 async function loadFolder(folderId) {
   historyStack.push(folderId);
 
-  document.getElementById("backBtn").style.display =
+  backBtn.style.display =
     historyStack.length > 1 ? "block" : "none";
 
   const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&key=${API_KEY}`
+    `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents and trashed=false&fields=files(id,name,mimeType)&key=${API_KEY}`
   );
 
   const data = await res.json();
-  const grid = document.getElementById("fileGrid");
-  grid.innerHTML = "";
+  fileGrid.innerHTML = "";
 
   data.files.forEach(file => {
     const div = document.createElement("div");
@@ -85,8 +76,23 @@ async function loadFolder(folderId) {
     const isFolder =
       file.mimeType === "application/vnd.google-apps.folder";
 
+    let icon = "";
+
+    if (isFolder) {
+      icon = "https://cdn-icons-png.flaticon.com/512/716/716784.png";
+    } else if (file.mimeType.includes("image")) {
+      icon = `https://drive.google.com/thumbnail?id=${file.id}`;
+    } else if (file.mimeType.includes("pdf")) {
+      icon = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
+    } else if (file.mimeType.includes("video")) {
+      icon = "https://cdn-icons-png.flaticon.com/512/727/727245.png";
+    } else {
+      icon = "https://cdn-icons-png.flaticon.com/512/109/109612.png";
+    }
+
     div.innerHTML = `
-      <p>${file.name}</p>
+      <img src="${icon}" class="file-icon">
+      <p class="file-name">${file.name}</p>
     `;
 
     div.onclick = () => {
@@ -94,7 +100,7 @@ async function loadFolder(folderId) {
       else openViewer(file.id);
     };
 
-    grid.appendChild(div);
+    fileGrid.appendChild(div);
   });
 }
 
@@ -105,11 +111,11 @@ function goBack() {
 }
 
 function openViewer(fileId) {
-  document.getElementById("viewer").style.display = "block";
-  document.getElementById("viewerFrame").src =
-    `https://drive.google.com/file/d/${fileId}/preview`;
+  viewer.style.display = "block";
+  viewerFrame.src = `https://drive.google.com/file/d/${fileId}/preview`;
 }
 
 function closeViewer() {
-  document.getElementById("viewer").style.display = "none";
+  viewer.style.display = "none";
+  viewerFrame.src = "";
 }
