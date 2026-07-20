@@ -14,6 +14,7 @@ body{
   color:white;
 }
 
+/* TOPBAR */
 .topbar{
   height:60px;
   background:#1f1f1f;
@@ -21,6 +22,12 @@ body{
   justify-content:space-between;
   align-items:center;
   padding:0 15px;
+}
+
+.left{
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 
 .user{
@@ -40,6 +47,7 @@ body{
   width:100%;
 }
 
+/* GRID */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
@@ -60,6 +68,7 @@ body{
   background:#2a2a2a;
 }
 
+/* VIEWER */
 .viewer{
   position:fixed;
   top:0;left:0;
@@ -82,18 +91,30 @@ body{
   border:none;
 }
 
+/* LOGIN */
 .loginBox{
   display:flex;
   justify-content:center;
   margin-top:40px;
+}
+
+/* LOADING */
+.loading{
+  text-align:center;
+  margin-top:50px;
+  font-size:18px;
 }
 </style>
 </head>
 
 <body>
 
+<!-- TOPBAR -->
 <div class="topbar">
-  <b>Drive PRO</b>
+  <div class="left">
+    <button onclick="goBack()">⬅️</button>
+    <b>Drive PRO</b>
+  </div>
 
   <div class="user" id="userBox" style="display:none;">
     <div class="avatar" id="avatar"></div>
@@ -101,10 +122,13 @@ body{
   </div>
 </div>
 
+<!-- LOGIN -->
 <div class="loginBox" id="login"></div>
 
+<!-- FILE GRID -->
 <div class="grid" id="grid"></div>
 
+<!-- VIEWER -->
 <div class="viewer" id="viewer">
   <div class="viewerTop">
     <button onclick="closeViewer()">⬅️ Kembali</button>
@@ -113,16 +137,15 @@ body{
 </div>
 
 <script>
-
-const CLIENT_ID = "PASTE_CLIENT_ID_KAMU";
-const API_KEY = "PASTE_API_KEY_KAMU";
+const CLIENT_ID = "112694935492-6hoanmgu4mimnvkons1s0a6rn3l0itrp.apps.googleusercontent.com";
+const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
 
 let tokenClient;
 let accessToken = null;
 let currentFolder = "root";
 let historyStack = [];
 
-/* INIT GOOGLE */
+/* INIT */
 window.onload = () => {
 
   google.accounts.id.initialize({
@@ -139,6 +162,10 @@ window.onload = () => {
     client_id: CLIENT_ID,
     scope: "https://www.googleapis.com/auth/drive.readonly",
     callback: (resp) => {
+      if(resp.error){
+        alert("Login gagal: "+resp.error);
+        return;
+      }
       accessToken = resp.access_token;
       loadFolder("root");
     },
@@ -159,67 +186,77 @@ function handleLogin(response){
   tokenClient.requestAccessToken();
 }
 
-/* JWT PARSE */
+/* PARSE JWT */
 function parseJwt (token) {
   return JSON.parse(atob(token.split('.')[1]));
 }
 
-/* LOAD FILE */
+/* LOAD FOLDER */
 async function loadFolder(folderId){
 
   currentFolder = folderId;
 
-  let url;
+  document.getElementById("grid").innerHTML =
+    "<div class='loading'>⏳ Loading...</div>";
 
-  if(folderId === "root"){
-    url = "https://www.googleapis.com/drive/v3/files?q='root'+in+parents&key="+API_KEY;
-  }else{
-    url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&key=${API_KEY}`;
+  let url = `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents&key=${API_KEY}`;
+
+  try{
+    const res = await fetch(url,{
+      headers:{
+        Authorization: "Bearer "+accessToken
+      }
+    });
+
+    const data = await res.json();
+    console.log(data);
+
+    if(!data.files){
+      document.getElementById("grid").innerHTML =
+        "<div class='loading'>❌ Gagal load data</div>";
+      return;
+    }
+
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+
+    data.files.forEach(file=>{
+      const div = document.createElement("div");
+      div.className = "card";
+
+      /* FOLDER */
+      if(file.mimeType === "application/vnd.google-apps.folder"){
+        div.innerHTML = "📁<br>"+file.name;
+        div.onclick = ()=>{
+          historyStack.push(currentFolder);
+          loadFolder(file.id);
+        };
+      }
+
+      /* IMAGE */
+      else if(file.mimeType.includes("image")){
+        div.innerHTML = "🖼️<br>"+file.name;
+        div.onclick = ()=> openImage(file.id);
+      }
+
+      /* PDF */
+      else if(file.mimeType.includes("pdf")){
+        div.innerHTML = "📄<br>"+file.name;
+        div.onclick = ()=> openPDF(file.id);
+      }
+
+      /* OTHER */
+      else{
+        div.innerHTML = "📄<br>"+file.name;
+      }
+
+      grid.appendChild(div);
+    });
+
+  }catch(err){
+    document.getElementById("grid").innerHTML =
+      "<div class='loading'>❌ Error koneksi</div>";
   }
-
-  const res = await fetch(url,{
-    headers:{
-      Authorization: "Bearer "+accessToken
-    }
-  });
-
-  const data = await res.json();
-
-  const grid = document.getElementById("grid");
-  grid.innerHTML = "";
-
-  data.files.forEach(file=>{
-    const div = document.createElement("div");
-    div.className = "card";
-
-    /* FOLDER */
-    if(file.mimeType === "application/vnd.google-apps.folder"){
-      div.innerHTML = "📁<br>"+file.name;
-      div.onclick = ()=>{
-        historyStack.push(currentFolder);
-        loadFolder(file.id);
-      };
-    }
-
-    /* IMAGE */
-    else if(file.mimeType.includes("image")){
-      div.innerHTML = "🖼️<br>"+file.name;
-      div.onclick = ()=> openImage(file.id);
-    }
-
-    /* PDF */
-    else if(file.mimeType.includes("pdf")){
-      div.innerHTML = "📄<br>"+file.name;
-      div.onclick = ()=> openPDF(file.id);
-    }
-
-    /* OTHER */
-    else{
-      div.innerHTML = "📄<br>"+file.name;
-    }
-
-    grid.appendChild(div);
-  });
 }
 
 /* PREVIEW */
@@ -246,7 +283,6 @@ function goBack(){
     loadFolder(historyStack.pop());
   }
 }
-
 </script>
 
 </body>
