@@ -22,6 +22,14 @@ input {
   width: 200px;
 }
 
+#searchInput {
+  margin: 10px 20px;
+  padding: 10px;
+  width: calc(100% - 40px);
+  border-radius: 10px;
+  border: none;
+}
+
 button {
   padding: 10px;
   background: #3b82f6;
