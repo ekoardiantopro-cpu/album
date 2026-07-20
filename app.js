@@ -6,7 +6,9 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// FIREBASE CONFIG
+// =======================
+// 🔥 FIREBASE CONFIG
+// =======================
 const firebaseConfig = {
   apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
   authDomain: "album-ff46e.firebaseapp.com",
@@ -17,9 +19,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+// =======================
+// 🔑 GOOGLE DRIVE API
+// =======================
 const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
 
-// DOM
+// =======================
+// 🎯 DOM ELEMENT
+// =======================
 const loginBox = document.getElementById("loginBox");
 const appContainer = document.getElementById("app");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -29,13 +36,24 @@ const viewerFrame = document.getElementById("viewerFrame");
 const backBtn = document.getElementById("backBtn");
 const searchInput = document.getElementById("searchInput");
 
+// INPUT FIX (INI YANG TADI ERROR)
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+
 let historyStack = [];
 let currentFiles = [];
 
-// LOGIN
+// =======================
+// 🔐 LOGIN (FIX TOTAL)
+// =======================
 document.getElementById("loginBtn").onclick = async () => {
-  const email = email.value;
-  const password = password.value;
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  if (!email || !password) {
+    alert("Email & password wajib diisi!");
+    return;
+  }
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
@@ -44,10 +62,14 @@ document.getElementById("loginBtn").onclick = async () => {
   }
 };
 
-// LOGOUT
+// =======================
+// 🚪 LOGOUT
+// =======================
 logoutBtn.onclick = () => signOut(auth);
 
-// AUTH
+// =======================
+// 🔄 AUTH STATE
+// =======================
 onAuthStateChanged(auth, (user) => {
   if (user) {
     loginBox.style.display = "none";
@@ -60,15 +82,21 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// FOLDER BUTTON
+// =======================
+// 📂 BUTTON FOLDER
+// =======================
 document.querySelectorAll("#folders button").forEach(btn => {
   btn.onclick = () => loadFolder(btn.dataset.id);
 });
 
-// BACK
+// =======================
+// 🔙 BACK
+// =======================
 backBtn.onclick = goBack;
 
-// SEARCH
+// =======================
+// 🔍 SEARCH
+// =======================
 searchInput.addEventListener("input", (e) => {
   const keyword = e.target.value.toLowerCase();
 
@@ -79,24 +107,39 @@ searchInput.addEventListener("input", (e) => {
   renderFiles(filtered);
 });
 
-// LOAD FOLDER
+// =======================
+// 📂 LOAD FOLDER
+// =======================
 async function loadFolder(folderId) {
   historyStack.push(folderId);
 
   backBtn.style.display =
     historyStack.length > 1 ? "block" : "none";
 
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents and trashed=false&fields=files(id,name,mimeType)&key=${API_KEY}`
-  );
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents and trashed=false&fields=files(id,name,mimeType)&key=${API_KEY}`
+    );
 
-  const data = await res.json();
+    const data = await res.json();
 
-  currentFiles = data.files;
-  renderFiles(currentFiles);
+    if (!data.files) {
+      alert("Gagal load folder!");
+      return;
+    }
+
+    currentFiles = data.files;
+    renderFiles(currentFiles);
+
+  } catch (err) {
+    console.error(err);
+    alert("Error ambil data Drive!");
+  }
 }
 
-// RENDER
+// =======================
+// 🎨 RENDER FILE
+// =======================
 function renderFiles(files) {
   fileGrid.innerHTML = "";
 
@@ -135,14 +178,18 @@ function renderFiles(files) {
   });
 }
 
-// BACK
+// =======================
+// 🔙 GO BACK
+// =======================
 function goBack() {
   historyStack.pop();
   const prev = historyStack.pop();
   if (prev) loadFolder(prev);
 }
 
-// VIEWER
+// =======================
+// 📄 VIEWER
+// =======================
 function openViewer(fileId) {
   viewer.style.display = "block";
   viewerFrame.src = `https://drive.google.com/file/d/${fileId}/preview`;
