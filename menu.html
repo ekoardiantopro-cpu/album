@@ -2,19 +2,11 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Drive Premium</title>
+<title>Drive App</title>
 
 <style>
-*{transition: background 0.3s, color 0.3s;}
+body{margin:0;font-family:Arial;background:#121212;color:white;}
 
-body{
-  margin:0;
-  font-family:Arial;
-  background:#121212;
-  color:white;
-}
-
-/* TOPBAR */
 .topbar{
   height:60px;
   background:#1f1f1f;
@@ -24,125 +16,65 @@ body{
   padding:0 15px;
 }
 
-.search{
-  width:200px;
-  padding:8px;
-  border-radius:8px;
-  border:none;
-  background:#2a2a2a;
-  color:white;
+.right{display:flex;gap:10px;align-items:center;}
+
+.avatar{
+  width:35px;height:35px;border-radius:50%;
+  overflow:hidden;cursor:pointer;
 }
 
-.user{
-  font-size:12px;
-  color:#aaa;
+.avatar img{width:100%;height:100%;object-fit:cover;}
+
+.dropdown{
+  position:absolute;
+  right:10px;
+  top:60px;
+  background:#1e1e1e;
+  padding:10px;
+  border-radius:10px;
+  display:none;
 }
 
-/* THEME BUTTON */
-.theme-btn{
-  font-size:18px;
-  cursor:pointer;
-  padding:6px 10px;
-  border-radius:8px;
-  background:#2a2a2a;
-}
-
-.theme-btn:hover{
-  background:#3a3a3a;
-}
-
-body.light .theme-btn{
-  background:#ddd;
-}
-
-/* BUTTON */
-.btn{
-  background:#e53935;
-  border:none;
-  padding:6px 10px;
-  border-radius:8px;
-  color:white;
-  cursor:pointer;
-  font-size:12px;
-}
-
-/* GRID */
-.container{
-  padding:15px;
-}
+.dropdown.show{display:block;}
 
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-  gap:12px;
+  gap:15px;
+  padding:15px;
 }
 
 .card{
   background:#1e1e1e;
-  padding:15px;
+  padding:20px;
   border-radius:12px;
   text-align:center;
   cursor:pointer;
+  transition:0.2s;
 }
 
-.card:hover{
-  transform:translateY(-3px);
-}
-
-.hidden{
-  display:none;
-}
-
-/* ICON */
-.icon{
-  font-size:40px;
-}
+.card:hover{background:#2a2a2a;}
 
 /* VIEWER */
-.viewerPage{
+.viewer{
   position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:#121212;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:#000;
   display:none;
   flex-direction:column;
 }
 
-.viewerPage.active{
-  display:flex;
-}
+.viewer.active{display:flex;}
 
 .viewerTop{
   padding:10px;
   background:#1f1f1f;
-  display:flex;
-  justify-content:space-between;
 }
 
-iframe{
+.viewer iframe{
   flex:1;
   border:none;
-}
-
-/* LIGHT MODE */
-body.light{
-  background:#f5f5f5;
-  color:#111;
-}
-
-body.light .topbar{
-  background:#fff;
-}
-
-body.light .card{
-  background:#fff;
-}
-
-body.light .search{
-  background:#eee;
-  color:#000;
 }
 </style>
 </head>
@@ -151,59 +83,35 @@ body.light .search{
 
 <!-- TOPBAR -->
 <div class="topbar">
+<div>Drive App</div>
 
-  <input class="search" id="search" placeholder="Cari file...">
+<div class="right">
+<div class="avatar" id="avatar"></div>
 
-  <div style="display:flex;align-items:center;gap:10px;">
-    
-    <!-- ICON DARK/LIGHT -->
-    <span id="themeToggle" class="theme-btn">🌙</span>
-
-    <div class="user" id="user"></div>
-
-    <button onclick="logout()" class="btn">Keluar</button>
-
-  </div>
-
+<div class="dropdown" id="dropdown">
+<div id="email"></div>
+<hr>
+<div onclick="logout()">🚪 Logout</div>
+</div>
+</div>
 </div>
 
-<!-- GRID -->
-<div class="container">
+<!-- FOLDER GRID -->
 <div class="grid">
 
-<div class="card folder" data-name="eko pro" onclick="openFolder('https://drive.google.com/drive/folders/1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">
-  <div class="icon">📁</div>
-  <div>EKO PRO</div>
-</div>
+<div class="card" onclick="openFolder('1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT')">📁 EKO PRO</div>
+<div class="card" onclick="openFolder('18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg')">📁 EKO 36</div>
+<div class="card" onclick="openFolder('1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">📁 EKO 03</div>
+<div class="card" onclick="openFolder('1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">📁 CV PROF</div>
 
-<div class="card folder" data-name="eko 36" onclick="openFolder('https://drive.google.com/drive/folders/18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg')">
-  <div class="icon">📁</div>
-  <div>EKO 36</div>
-</div>
-
-<div class="card folder" data-name="eko 03" onclick="openFolder('https://drive.google.com/drive/folders/1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW')">
-  <div class="icon">📁</div>
-  <div>EKO 03</div>
-</div>
-
-<div class="card folder" data-name="cv prof" onclick="openFolder('https://drive.google.com/drive/folders/1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv')">
-  <div class="icon">📁</div>
-  <div>CV PROF</div>
-</div>
-
-</div>
 </div>
 
 <!-- VIEWER -->
-<div class="viewerPage" id="viewerPage">
-
+<div class="viewer" id="viewer">
 <div class="viewerTop">
-  <button class="btn" onclick="closeViewer()">⬅️ Kembali</button>
-  <button class="btn" onclick="logout()">Logout</button>
+<button onclick="closeViewer()">⬅️ Kembali</button>
 </div>
-
-<iframe id="viewer"></iframe>
-
+<iframe id="frame"></iframe>
 </div>
 
 <script type="module">
@@ -220,69 +128,45 @@ appId:"1:112694935492:web:e5696cae239c50367eee91"
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-/* USER */
+const avatar = document.getElementById("avatar");
+const dropdown = document.getElementById("dropdown");
+const email = document.getElementById("email");
+
+/* AUTH */
 onAuthStateChanged(auth,user=>{
-  if(!user){
-    location.href="index.html";
+  if(user){
+    email.innerText = user.email;
+
+    if(user.photoURL){
+      avatar.innerHTML = `<img src="${user.photoURL}">`;
+    }else{
+      avatar.innerText = user.email[0];
+    }
+
   }else{
-    document.getElementById("user").innerText=user.email;
+    location.href="index.html";
   }
 });
 
-/* SEARCH */
-const search = document.getElementById("search");
-const cards = document.querySelectorAll(".card");
-
-search.addEventListener("input", function(){
-  const value = this.value.toLowerCase().trim();
-
-  cards.forEach(card=>{
-    const name = (card.getAttribute("data-name") || "").toLowerCase();
-
-    if(card.classList.contains("folder")){
-      card.style.display = "block";
-      return;
-    }
-
-    if(name.includes(value)){
-      card.style.display = "block";
-    }else{
-      card.style.display = "none";
-    }
-  });
-});
-
-/* FOLDER */
-window.openFolder = function(url){
-  window.open(url,"_blank");
-}
+/* DROPDOWN */
+avatar.onclick = ()=> dropdown.classList.toggle("show");
 
 /* LOGOUT */
-window.logout = function(){
+window.logout = ()=>{
   signOut(auth).then(()=> location.href="index.html");
-}
+};
 
-/* THEME TOGGLE */
-const toggle = document.getElementById("themeToggle");
+/* OPEN FOLDER (EMBED DRIVE) */
+window.openFolder = (id)=>{
+  const url = `https://drive.google.com/embeddedfolderview?id=${id}#grid`;
 
-if(localStorage.getItem("theme") === "light"){
-  document.body.classList.add("light");
-  toggle.innerText = "☀️";
-}else{
-  toggle.innerText = "🌙";
-}
+  document.getElementById("viewer").classList.add("active");
+  document.getElementById("frame").src = url;
+};
 
-toggle.onclick = function(){
-  document.body.classList.toggle("light");
-
-  if(document.body.classList.contains("light")){
-    localStorage.setItem("theme","light");
-    toggle.innerText = "☀️";
-  }else{
-    localStorage.setItem("theme","dark");
-    toggle.innerText = "🌙";
-  }
-}
+window.closeViewer = ()=>{
+  document.getElementById("viewer").classList.remove("active");
+};
 </script>
 
 </body>
