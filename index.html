@@ -299,6 +299,16 @@
     modal.setAttribute("aria-hidden", "false");
   }
 
+  // Explicit Enter support: pressing Enter in either login field submits the form.
+  [email, password].forEach((field) => {
+    field?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        form?.requestSubmit();
+      }
+    });
+  });
+
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
     event.stopPropagation();
