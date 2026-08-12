@@ -1414,18 +1414,3 @@ body.settings-open {
     min-height: 38px;
   }
 }
-
-
-.session-setting-row {
-  display: grid;
-  gap: 8px;
-  margin: 10px 0;
-}
-.session-setting-row label {
-  font-size: 0.9rem;
-  opacity: 0.9;
-}
-.session-setting-row input {
-  width: 100%;
-  box-sizing: border-box;
-}

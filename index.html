@@ -181,28 +181,6 @@
     </div>
 
     <div class="settings-section">
-      <h4>🕘 Historical Activity</h4>
-      <p class="settings-note">Menampilkan aktivitas akun yang sedang login selama 30 hari terakhir, termasuk waktu, aktivitas, IP publik, dan lokasi perkiraan (kota/negara) jika tersedia.</p>
-      <div class="history-actions">
-        <button id="refreshHistoryBtn" class="secondary-btn">↻ Refresh history</button>
-        <button id="clearHistoryBtn" class="secondary-btn danger-btn">🗑 Clear history 30 hari</button>
-      </div>
-      <div id="activityHistory" class="activity-history">
-        <div class="history-empty">Belum ada aktivitas.</div>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <h4>⏱️ Sesi & Auto Logout</h4>
-      <p class="settings-note">Akun akan otomatis logout jika tidak ada aktivitas selama durasi yang dipilih. Default: 3 jam.</p>
-      <div class="session-setting-row">
-        <label for="sessionTimeoutInput">Durasi tanpa aktivitas (menit)</label>
-        <input id="sessionTimeoutInput" class="settings-text-input" type="number" min="15" max="1440" step="15" value="180">
-      </div>
-      <button id="saveSessionTimeoutBtn" class="secondary-btn">Simpan durasi sesi</button>
-    </div>
-
-    <div class="settings-section">
       <h4>Pesan Peringatan Login Gagal</h4>
       <p class="settings-note">Pesan ini hanya ditampilkan sebagai peringatan ketika autentikasi gagal. Sistem tidak mengklaim bahwa IP/lokasi benar-benar dilacak oleh halaman ini.</p>
       <textarea id="securityWarningInput" class="settings-textarea" rows="10" maxlength="2500"></textarea>
