@@ -14,13 +14,12 @@
 </header>
 
 <!-- LOGIN -->
-<form id="loginBox">
+<div id="loginBox">
   <h3>Login</h3>
-  <input type="email" id="email" placeholder="Email" autocomplete="username" required><br><br>
-  <input type="password" id="password" placeholder="Password" autocomplete="current-password" required><br><br>
-  <button id="loginBtn" type="submit">Login</button>
-  <div id="loginStatus" class="login-status" role="alert" aria-live="polite"></div>
-</form>
+  <input type="email" id="email" placeholder="Email" autocomplete="off"><br><br>
+  <input type="password" id="password" placeholder="Password" autocomplete="new-password"><br><br>
+  <button id="loginBtn">Login</button>
+</div>
 
 <!-- APP -->
 <div id="app" style="display:none;">
@@ -258,87 +257,6 @@
     <div id="viewerCounter">0 / 0</div>
   </div>
 </div>
-
-<!-- STANDALONE LOGIN HANDLER: tetap bekerja walau modul gallery gagal dimuat -->
-<script type="module">
-  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
-    authDomain: "album-ff46e.firebaseapp.com",
-    projectId: "album-ff46e",
-    appId: "1:112694935492:web:e5696cae239c50367eee91"
-  };
-
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  window.__mahevaAuth = auth;
-  window.__mahevaStandaloneLogin = true;
-
-  const form = document.getElementById("loginBox");
-  const email = document.getElementById("email");
-  const password = document.getElementById("password");
-  const button = document.getElementById("loginBtn");
-  const status = document.getElementById("loginStatus");
-
-  function statusText(text, type) {
-    if (!status) return;
-    status.textContent = text;
-    status.className = "login-status " + (type || "");
-  }
-
-  function showSecurityWarningFallback() {
-    const modal = document.getElementById("securityWarningModal");
-    const message = document.getElementById("securityWarningMessage");
-    if (!modal || !message) return;
-    const fallback = localStorage.getItem("maheva_security_warning") ||
-      "[PERINGATAN KEAMANAN: AKSES ILEGAL TERDETEKSI]\n\nAutentikasi Gagal! Anda tidak memiliki izin untuk mengakses area privat ini.";
-    message.textContent = fallback;
-    modal.style.display = "flex";
-    modal.setAttribute("aria-hidden", "false");
-  }
-
-  form?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const e = email?.value.trim() || "";
-    const p = password?.value || "";
-    if (!e || !p) {
-      statusText("Email dan password wajib diisi.", "error");
-      (!e ? email : password)?.focus();
-      return;
-    }
-    button.disabled = true;
-    button.textContent = "Memproses...";
-    statusText("Mengautentikasi...", "loading");
-    try {
-      await signInWithEmailAndPassword(auth, e, p);
-      password.value = "";
-      statusText("Login berhasil.", "success");
-      // App module's auth observer will perform the full dashboard transition.
-      document.getElementById("loginBox").style.display = "none";
-      document.getElementById("app").style.display = "block";
-      setTimeout(() => statusText(""), 500);
-      window.dispatchEvent(new Event("maheva-login-success"));
-    } catch (err) {
-      console.error("Maheva login:", err);
-      password.value = "";
-      const code = err?.code || "";
-      statusText(
-        ["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found"].includes(code)
-          ? "Email atau password salah."
-          : "Login gagal: " + (err?.message || "Terjadi kesalahan."),
-        "error"
-      );
-      window.dispatchEvent(new Event("maheva-login-failed"));
-      showSecurityWarningFallback();
-    } finally {
-      button.disabled = false;
-      button.textContent = "Login";
-    }
-  });
-</script>
 
 <!-- JSZip untuk download beberapa foto sebagai ZIP -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"

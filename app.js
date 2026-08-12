@@ -1,7 +1,7 @@
 // =======================
 // FIREBASE IMPORT
 // =======================
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 
 import {
   getAuth,
@@ -31,7 +31,7 @@ const firebaseConfig = {
   appId: "1:112694935492:web:e5696cae239c50367eee91"
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -68,18 +68,6 @@ const saveRunningTextBtn = document.getElementById("saveRunningTextBtn");
 
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
-const loginForm = document.getElementById("loginBox");
-const loginStatus = document.getElementById("loginStatus");
-const loginBtn = document.getElementById("loginBtn");
-
-function setLoginStatus(message = "", type = "") {
-  if (!loginStatus) return;
-  loginStatus.textContent = message;
-  loginStatus.className = `login-status ${type}`.trim();
-}
-
-// Login is handled by the standalone login handler in index.html so it remains
-// available even if an optional gallery feature throws during startup.
 
 const viewerImage = document.getElementById("viewerImage");
 const viewerLoading = document.getElementById("viewerLoading");
@@ -800,8 +788,32 @@ function restoreSessionSetting() {
 }
 
 // =======================
-// AUTH STATE / LOGOUT
+// LOGIN
 // =======================
+document.getElementById("loginBtn").onclick = async () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  if (!email || !password) {
+    alert("Email & password wajib diisi!");
+    return;
+  }
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    currentUser = auth.currentUser;
+    await logActivity("Login berhasil", `Login akun ${email}`);
+  } catch (err) {
+    console.error(err);
+    showSecurityWarning();
+    passwordInput.value = "";
+    // Failed authentication cannot be written to a Firestore collection that
+    // requires an authenticated user. Keep a local audit trail instead.
+    const failed = JSON.parse(localStorage.getItem("maheva_failed_logins") || "[]");
+    failed.unshift({ email, timestamp: Date.now(), userAgent: navigator.userAgent });
+    localStorage.setItem("maheva_failed_logins", JSON.stringify(failed.slice(0, 100)));
+  }
+};
 
 logoutBtn.onclick = async () => {
   try {
@@ -2002,10 +2014,6 @@ function closeSecurityWarning() {
   securityWarningModal.setAttribute("aria-hidden", "true");
   document.body.classList.remove("security-warning-open");
 }
-
-window.addEventListener("maheva-login-failed", () => {
-  try { showSecurityWarning(); } catch (err) { console.warn("Security warning unavailable:", err); }
-});
 
 function restoreSecurityWarning() {
   securityWarningInput.value = safeStorageGet(SECURITY_WARNING_KEY, DEFAULT_SECURITY_WARNING);
