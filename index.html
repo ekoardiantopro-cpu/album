@@ -25,11 +25,12 @@
 <div id="app" style="display:none;">
 
   <div class="app-topbar">
-    <div class="app-title">Album Keluarga</div>
+    <div id="runningTextBar" class="running-text-bar" aria-live="polite">
+      <div id="runningTextTrack" class="running-text-track">Selamat datang di Maheva Family ❤️</div>
+    </div>
     <div class="app-top-actions">
       <button id="homeBtn" class="header-icon" title="Home" aria-label="Home">⌂</button>
       <button id="recentBtn" class="header-icon" title="Recent" aria-label="Recent">◷</button>
-      <button id="searchBtn" class="header-icon" title="Search" aria-label="Search">⌕</button>
       <button id="settingsBtn" class="header-icon" title="Settings" aria-label="Settings">⚙️</button>
     </div>
   </div>
@@ -37,14 +38,6 @@
   <!-- FOLDER -->
   <div id="folders"></div>
 
-  <hr>
-
-  <!-- RUNNING TEXT -->
-  <div id="runningTextBar" class="running-text-bar" aria-live="polite">
-    <div id="runningTextTrack" class="running-text-track">Selamat datang di Maheva Family ❤️</div>
-  </div>
-
-  <hr>
 
   <!-- SEARCH + SORT -->
   <div class="library-toolbar">
@@ -59,6 +52,7 @@
       </select>
 
       <button id="favoritesBtn" class="icon-action" title="Tampilkan favorit" aria-label="Tampilkan favorit">♡</button>
+      <button id="searchBtn" class="icon-action" title="Cari seluruh album" aria-label="Cari seluruh album">⌕</button>
       <button id="selectModeBtn" class="icon-action" title="Pilih foto" aria-label="Pilih foto">☑</button>
       <button id="downloadSelectedBtn" class="icon-action" title="Download foto terpilih" aria-label="Download foto terpilih" style="display:none;">⬇</button>
     </div>
@@ -72,24 +66,16 @@
   </div>
 
   <div id="fileGrid"></div>
-</div>
 
-<!-- SEARCH -->
-<div id="searchPanel" class="settings-overlay" style="display:none;" aria-hidden="true">
-  <div class="settings-card search-card" role="dialog" aria-modal="true" aria-labelledby="searchTitle">
-    <div class="settings-header">
-      <div>
-        <h3 id="searchTitle">⌕ Cari seluruh album</h3>
-        <p>Pencarian dimulai dari semua drive dan seluruh subfolder.</p>
-      </div>
-      <button id="closeSearchBtn" class="settings-close" title="Tutup" aria-label="Tutup">✕</button>
+  <footer id="socialFooter" class="social-footer">
+    <div class="social-links">
+      <a id="socialInstagram" href="#" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram"><span>◎</span></a>
+      <a id="socialLinkedin" href="#" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" title="LinkedIn"><span>in</span></a>
+      <a id="socialYoutube" href="#" target="_blank" rel="noopener noreferrer" aria-label="YouTube" title="YouTube"><span>▶</span></a>
+      <a id="socialFacebook" href="#" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook"><span>f</span></a>
     </div>
-    <div class="settings-section">
-      <input id="globalSearchInput" class="settings-text-input" type="search" placeholder="Cari nama file, tanggal..." autocomplete="off">
-      <button id="globalSearchRunBtn" class="secondary-btn">⌕ Mulai pencarian</button>
-      <div id="globalSearchStatus" class="settings-note"></div>
-    </div>
-  </div>
+    <div class="social-caption">Maheva Family</div>
+  </footer>
 </div>
 
 <!-- SETTINGS -->
@@ -181,6 +167,25 @@
         </label>
       </div>
       <button id="saveRunningTextBtn" class="secondary-btn">Simpan running text</button>
+    </div>
+
+    <div class="settings-section">
+      <h4>Media Sosial</h4>
+      <p class="settings-note">Masukkan link sosial media. Kosongkan jika tidak ingin menampilkannya.</p>
+      <div class="social-settings-grid">
+        <input id="socialInstagramInput" class="settings-text-input" type="url" placeholder="Instagram URL">
+        <input id="socialLinkedinInput" class="settings-text-input" type="url" placeholder="LinkedIn URL">
+        <input id="socialYoutubeInput" class="settings-text-input" type="url" placeholder="YouTube URL">
+        <input id="socialFacebookInput" class="settings-text-input" type="url" placeholder="Facebook URL">
+      </div>
+      <button id="saveSocialLinksBtn" class="secondary-btn">Simpan link sosial media</button>
+    </div>
+
+    <div class="settings-section">
+      <h4>Pesan Peringatan Login Gagal</h4>
+      <p class="settings-note">Pesan ini hanya ditampilkan sebagai peringatan ketika autentikasi gagal. Sistem tidak mengklaim bahwa IP/lokasi benar-benar dilacak oleh halaman ini.</p>
+      <textarea id="securityWarningInput" class="settings-textarea" rows="10" maxlength="2500"></textarea>
+      <button id="saveSecurityWarningBtn" class="secondary-btn">Simpan pesan peringatan</button>
     </div>
 
     <div class="settings-note">Pengaturan ini tersimpan di browser/perangkat yang sedang digunakan.</div>

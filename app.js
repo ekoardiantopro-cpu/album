@@ -70,11 +70,6 @@ const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const imageContainer = document.getElementById("imageContainer");
 
-const searchPanel = document.getElementById("searchPanel");
-const closeSearchBtn = document.getElementById("closeSearchBtn");
-const globalSearchInput = document.getElementById("globalSearchInput");
-const globalSearchRunBtn = document.getElementById("globalSearchRunBtn");
-const globalSearchStatus = document.getElementById("globalSearchStatus");
 
 // =======================
 // STATE
@@ -111,7 +106,6 @@ let dragOriginY = 0;
 let dragging = false;
 let recentMode = false;
 let globalSearchMode = false;
-let searchBusy = false;
 let localSearchTerm = "";
 
 // Preview besar, tetapi original hanya dimuat saat zoom tinggi / download.
@@ -232,6 +226,8 @@ function matchesSearch(file, keyword) {
     file.mimeType,
     file.modifiedTime || "",
     file.createdTime || "",
+    file._driveName || "",
+    file._path || "",
     formatDate(file)
   ]
     .join(" ")
@@ -512,14 +508,16 @@ async function searchAllDrives(keyword) {
   return results;
 }
 
-async function runGlobalSearch() {
-  const keyword = globalSearchInput.value.trim();
-  if (!keyword || searchBusy) return;
-  searchBusy = true;
-  globalSearchStatus.textContent = "Sedang mengindex semua direktori...";
-  globalSearchRunBtn.disabled = true;
+async function runGlobalSearch(keyword) {
+  const query = String(keyword || "").trim();
+  if (!query) return;
+
+  searchBtn.disabled = true;
+  const previousLabel = homeStatus.textContent;
+  homeStatus.textContent = `Mencari: ${query}`;
+
   try {
-    const results = await searchAllDrives(keyword);
+    const results = await searchAllDrives(query);
     currentFiles = results;
     visibleFiles = sortFiles(results);
     recentMode = false;
@@ -528,13 +526,13 @@ async function runGlobalSearch() {
     backBtn.style.display = "none";
     homeStatus.textContent = `Hasil pencarian: ${results.length}`;
     renderFiles(visibleFiles);
-    closeSearch();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (err) {
     console.error(err);
-    globalSearchStatus.textContent = `Pencarian gagal: ${err.message}`;
+    homeStatus.textContent = previousLabel;
+    alert(`Pencarian gagal: ${err.message}`);
   } finally {
-    searchBusy = false;
-    globalSearchRunBtn.disabled = false;
+    searchBtn.disabled = false;
   }
 }
 
@@ -556,7 +554,8 @@ document.getElementById("loginBtn").onclick = async () => {
     await signInWithEmailAndPassword(auth, email, password);
   } catch (err) {
     console.error(err);
-    alert(err.message);
+    showSecurityWarning();
+    passwordInput.value = "";
   }
 };
 
@@ -566,8 +565,6 @@ logoutBtn.onclick = async () => {
   } finally {
     emailInput.value = "";
     passwordInput.value = "";
-    globalSearchInput.value = "";
-    globalSearchStatus.textContent = "";
   }
 };
 
@@ -592,7 +589,6 @@ onAuthStateChanged(auth, user => {
     recentBtn.style.display = "none";
     searchBtn.style.display = "none";
     closeSettings();
-    closeSearch();
     closeViewer();
     emailInput.value = "";
     passwordInput.value = "";
@@ -803,30 +799,13 @@ clearSelectionBtn.onclick = clearSelection;
 // HOME / RECENT / GLOBAL SEARCH UI
 // =======================
 recentBtn.onclick = renderRecent;
-searchBtn.onclick = () => {
-  globalSearchInput.value = "";
-  globalSearchStatus.textContent = "";
-  searchPanel.style.display = "flex";
-  searchPanel.setAttribute("aria-hidden", "false");
-  document.body.classList.add("settings-open");
-  setTimeout(() => globalSearchInput.focus(), 50);
+searchBtn.onclick = async () => {
+  if (searchBtn.disabled) return;
+  const keyword = window.prompt("Masukkan kata kunci pencarian seluruh album:", "");
+  if (keyword && keyword.trim()) {
+    await runGlobalSearch(keyword.trim());
+  }
 };
-
-function closeSearch() {
-  searchPanel.style.display = "none";
-  searchPanel.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("settings-open");
-}
-
-closeSearchBtn.onclick = closeSearch;
-globalSearchRunBtn.onclick = runGlobalSearch;
-globalSearchInput.addEventListener("keydown", event => {
-  if (event.key === "Enter") runGlobalSearch();
-  if (event.key === "Escape") closeSearch();
-});
-searchPanel.addEventListener("click", event => {
-  if (event.target === searchPanel) closeSearch();
-});
 
 // =======================
 // VIEWER
@@ -1407,6 +1386,17 @@ const removeBackgroundBtn = document.getElementById("removeBackgroundBtn");
 const themeOptions = [...document.querySelectorAll(".theme-option")];
 const backgroundOptions = [...document.querySelectorAll(".background-option")];
 const accentOptions = [...document.querySelectorAll(".accent-option")];
+const socialInstagramInput = document.getElementById("socialInstagramInput");
+const socialLinkedinInput = document.getElementById("socialLinkedinInput");
+const socialYoutubeInput = document.getElementById("socialYoutubeInput");
+const socialFacebookInput = document.getElementById("socialFacebookInput");
+const saveSocialLinksBtn = document.getElementById("saveSocialLinksBtn");
+const securityWarningInput = document.getElementById("securityWarningInput");
+const saveSecurityWarningBtn = document.getElementById("saveSecurityWarningBtn");
+const socialInstagram = document.getElementById("socialInstagram");
+const socialLinkedin = document.getElementById("socialLinkedin");
+const socialYoutube = document.getElementById("socialYoutube");
+const socialFacebook = document.getElementById("socialFacebook");
 
 const THEME_KEY = "eko_album_theme";
 const BG_KEY = "eko_album_background";
@@ -1415,6 +1405,20 @@ const CUSTOM_BG_KEY = "eko_album_custom_background";
 const RUNNING_TEXT_KEY = "maheva_running_text";
 const RUNNING_ANIMATION_KEY = "maheva_running_animation";
 const RUNNING_FONT_KEY = "maheva_running_font";
+const SOCIAL_LINKS_KEY = "maheva_social_links";
+const SECURITY_WARNING_KEY = "maheva_security_warning";
+
+const DEFAULT_SECURITY_WARNING = `[PERINGATAN KEAMANAN: AKSES ILEGAL TERDETEKSI]
+Autentikasi Gagal! Anda tidak memiliki izin untuk mengakses area privat ini.
+Sistem firewall kami telah mencatat dan mengunci data Anda:
+
+Alamat IP: Terekam & Terlacak
+
+Lokasi Geografis Perangkat: Teridentifikasi
+
+User-Agent (Browser & OS): Masuk dalam log server
+
+Segala bentuk percobaan login berulang (Brute Force) akan otomatis terlaporkan ke otoritas penyedia layanan internet (ISP) Anda sebagai aktivitas siber ilegal. Segera tinggalkan halaman ini.`;
 
 const runningAnimations = ["marquee-left", "marquee-right", "bounce", "fade", "pulse", "typewriter"];
 const runningFonts = ["system", "rounded", "serif", "mono", "cursive"];
@@ -1423,7 +1427,8 @@ function applySiteTitle(value) {
   const title = String(value || "").trim() || "Maheva Family";
   document.title = title;
   document.querySelector("header h2").textContent = `🏠 ${title}`;
-  document.querySelector(".app-title").textContent = "Album Keluarga";
+  const socialCaption = document.querySelector(".social-caption");
+  if (socialCaption) socialCaption.textContent = title;
   siteTitleInput.value = title;
   safeStorageSet(SITE_TITLE_KEY, title);
 }
@@ -1591,8 +1596,63 @@ function restoreAppearanceSettings() {
   }
 }
 
+function getSocialLinks() {
+  try {
+    const data = JSON.parse(safeStorageGet(SOCIAL_LINKS_KEY, "{}"));
+    return data && typeof data === "object" ? data : {};
+  } catch {
+    return {};
+  }
+}
+
+function normalizeUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://${raw}`;
+}
+
+function applySocialLinks() {
+  const links = getSocialLinks();
+  const items = [
+    [socialInstagram, links.instagram],
+    [socialLinkedin, links.linkedin],
+    [socialYoutube, links.youtube],
+    [socialFacebook, links.facebook]
+  ];
+  items.forEach(([el, href]) => {
+    const url = normalizeUrl(href);
+    el.href = url || "#";
+    el.classList.toggle("is-disabled", !url);
+    el.setAttribute("aria-disabled", String(!url));
+    el.onclick = event => {
+      if (!url) event.preventDefault();
+    };
+  });
+}
+
+function restoreSocialLinks() {
+  const links = getSocialLinks();
+  socialInstagramInput.value = links.instagram || "";
+  socialLinkedinInput.value = links.linkedin || "";
+  socialYoutubeInput.value = links.youtube || "";
+  socialFacebookInput.value = links.facebook || "";
+  applySocialLinks();
+}
+
+function showSecurityWarning() {
+  const message = safeStorageGet(SECURITY_WARNING_KEY, DEFAULT_SECURITY_WARNING);
+  alert(message);
+}
+
+function restoreSecurityWarning() {
+  securityWarningInput.value = safeStorageGet(SECURITY_WARNING_KEY, DEFAULT_SECURITY_WARNING);
+}
+
 function openSettings() {
   siteTitleInput.value = safeStorageGet(SITE_TITLE_KEY, "Maheva Family");
+  restoreSocialLinks();
+  restoreSecurityWarning();
   renderDriveSettings();
   settingsPanel.style.display = "flex";
   settingsPanel.setAttribute("aria-hidden", "false");
@@ -1647,6 +1707,25 @@ saveRunningTextBtn.onclick = () => {
     );
   });
 });
+
+saveSocialLinksBtn.onclick = () => {
+  const links = {
+    instagram: socialInstagramInput.value.trim(),
+    linkedin: socialLinkedinInput.value.trim(),
+    youtube: socialYoutubeInput.value.trim(),
+    facebook: socialFacebookInput.value.trim()
+  };
+  safeStorageSet(SOCIAL_LINKS_KEY, JSON.stringify(links));
+  applySocialLinks();
+  alert("Link sosial media disimpan.");
+};
+
+saveSecurityWarningBtn.onclick = () => {
+  const message = securityWarningInput.value.trim() || DEFAULT_SECURITY_WARNING;
+  safeStorageSet(SECURITY_WARNING_KEY, message);
+  securityWarningInput.value = message;
+  alert("Pesan peringatan login disimpan.");
+};
 
 removeBackgroundBtn.onclick = () => {
   try {
@@ -1708,5 +1787,7 @@ document.addEventListener("keydown", event => {
 restoreAppearanceSettings();
 restoreRunningText();
 restoreSiteTitle();
+restoreSocialLinks();
+restoreSecurityWarning();
 renderDriveButtons();
 
