@@ -44,6 +44,7 @@
     <div id="homeStatus" class="home-status">Dashboard</div>
 
     <div class="library-actions">
+      <input id="searchInput" type="search" placeholder="Cari file..." autocomplete="off" aria-label="Cari file">
       <select id="sortSelect" title="Urutkan">
         <option value="newest">Terbaru</option>
         <option value="oldest">Terlama</option>
@@ -214,6 +215,9 @@
       <div id="viewerLoading" aria-live="polite">⏳</div>
       <div id="viewerHint">Double-click / scroll untuk zoom</div>
       <img id="viewerImage" src="" alt="Preview foto" draggable="false">
+      <video id="viewerVideo" controls playsinline style="display:none;max-width:96%;max-height:96%;"></video>
+      <iframe id="viewerFrame" title="Preview file" style="display:none;width:96%;height:92%;border:0;background:#fff;"></iframe>
+      <audio id="viewerAudio" controls style="display:none;max-width:90%;"></audio>
     </div>
 
     <button id="nextBtn" class="viewer-nav viewer-next" title="Foto berikutnya" aria-label="Foto berikutnya">›</button>
