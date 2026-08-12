@@ -350,10 +350,13 @@ onAuthStateChanged(auth, user => {
     loginBox.style.display = "none";
     appContainer.style.display = "block";
     logoutBtn.style.display = "block";
+    settingsBtn.style.display = "inline-flex";
   } else {
     loginBox.style.display = "block";
     appContainer.style.display = "none";
     logoutBtn.style.display = "none";
+    settingsBtn.style.display = "none";
+    closeSettings();
     closeViewer();
   }
 });
@@ -621,50 +624,15 @@ function openViewer(index) {
 }
 
 function getPreviewUrl(file) {
-  return getThumbnailUrl(file, PREVIEW_SIZE);
+  // Gunakan thumbnail Drive hanya sebagai fallback.
+  // Viewer utama sekarang langsung memuat file original agar foto tidak kecil.
+  return `https://drive.google.com/thumbnail?id=${encodeURIComponent(file.id)}&sz=w2400`;
 }
 
 function loadOriginalForZoom() {
-  if (isOriginalLoaded || originalLoadStarted) return;
-
-  const file = currentPhotoFiles[currentPhotoIndex];
-  if (!file) return;
-
-  originalLoadStarted = true;
-
-  const original = new Image();
-
-  original.onload = () => {
-    // Jangan mengganti gambar jika user sudah pindah foto.
-    const current = currentPhotoFiles[currentPhotoIndex];
-    if (!current || current.id !== file.id) return;
-
-    viewerImage.src = original.src;
-    isOriginalLoaded = true;
-  };
-
-  original.onerror = () => {
-    originalLoadStarted = false;
-
-    // Fallback untuk file Drive yang tidak melayani media melalui API.
-    const fallback = new Image();
-
-    fallback.onload = () => {
-      const current = currentPhotoFiles[currentPhotoIndex];
-      if (!current || current.id !== file.id) return;
-
-      viewerImage.src = fallback.src;
-      isOriginalLoaded = true;
-    };
-
-    fallback.onerror = () => {
-      console.warn("Original gagal dimuat, tetap menggunakan preview besar.");
-    };
-
-    fallback.src = getFallbackOriginalViewUrl(file.id);
-  };
-
-  original.src = getOriginalViewUrl(file.id);
+  // Foto viewer sudah menggunakan original sejak awal.
+  // Fungsi dipertahankan agar alur zoom lama tetap kompatibel.
+  return;
 }
 
 function prefetchAround(index) {
@@ -678,7 +646,7 @@ function prefetchAround(index) {
     if (i < 0 || i >= currentPhotoFiles.length) return;
 
     const file = currentPhotoFiles[i];
-    const url = getPreviewUrl(file);
+    const url = getOriginalViewUrl(file.id);
 
     if (preloadedUrls.has(url)) return;
 
@@ -716,20 +684,41 @@ function showPhoto(index) {
 
   updateViewerFavorite();
 
-  // Preview besar untuk membuka foto cepat.
-  viewerImage.src = getPreviewUrl(file);
+  // PENTING: viewer langsung memakai file original, bukan thumbnail kecil.
+  // Jika original tidak bisa dimuat, baru fallback ke thumbnail besar.
+  const originalUrl = getOriginalViewUrl(file.id);
+  const fallbackUrl = getPreviewUrl(file);
 
-  viewerImage.onload = () => {
+  let finished = false;
+
+  const showLoaded = (src, original) => {
+    if (finished) return;
+    finished = true;
+    viewerImage.src = src;
+    isOriginalLoaded = original;
     viewerLoading.style.display = "none";
     viewerImage.style.display = "block";
     prefetchAround(index);
   };
 
-  viewerImage.onerror = () => {
-    viewerLoading.style.display = "none";
-    viewerImage.style.display = "none";
-    alert("Preview foto tidak dapat dimuat.");
+  viewerImage.onload = () => {
+    showLoaded(viewerImage.src, viewerImage.src === originalUrl);
   };
+
+  viewerImage.onerror = () => {
+    if (viewerImage.src === fallbackUrl) {
+      finished = true;
+      viewerLoading.style.display = "none";
+      viewerImage.style.display = "none";
+      alert("Foto tidak dapat dimuat. Periksa izin file Google Drive.");
+      return;
+    }
+
+    // Original gagal → gunakan thumbnail besar sebagai fallback.
+    viewerImage.src = fallbackUrl;
+  };
+
+  viewerImage.src = originalUrl;
 }
 
 function updateViewerFavorite() {

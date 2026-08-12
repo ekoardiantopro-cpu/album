@@ -29,6 +29,42 @@ header h2 {
   margin: 0;
 }
 
+.app-topbar {
+  margin: 10px 15px 0;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--surface, #1e293b);
+  border: 1px solid var(--border, #334155);
+  border-radius: 12px;
+}
+
+.app-title {
+  font-size: 14px;
+  font-weight: 600;
+  opacity: .85;
+}
+
+.header-icon {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  background: var(--surface-2, #334155);
+  color: var(--text, #fff);
+  border: 1px solid var(--border, #475569);
+}
+
+.header-icon:hover {
+  background: var(--accent, #3b82f6);
+  color: #fff;
+}
+
 #loginBox {
   text-align: center;
   margin-top: 50px;
@@ -730,4 +766,28 @@ body.settings-open {
   .theme-options { grid-template-columns: 1fr; }
   .background-options { grid-template-columns: repeat(2, 1fr); }
   .settings-card { padding: 16px; }
+}
+
+/* Viewer: tampilkan foto original sebesar mungkin */
+#viewerImage {
+  max-width: 98vw;
+  max-height: 88vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+#imageContainer {
+  min-width: 0;
+  min-height: 0;
+}
+
+#viewer:fullscreen #imageContainer,
+#imageContainer:fullscreen {
+  background: #000;
+}
+
+#imageContainer:fullscreen #viewerImage {
+  max-width: 100vw;
+  max-height: 100vh;
 }
