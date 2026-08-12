@@ -1,5 +1,5 @@
 // =======================
-// 🔥 FIREBASE IMPORT (FIX)
+// 🔥 FIREBASE IMPORT (FIX TOTAL)
 // =======================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 
@@ -18,7 +18,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // =======================
-// 🔥 CONFIG (API ASLI KAMU)
+// 🔥 CONFIG (ISI BENAR)
 // =======================
 const firebaseConfig = {
   apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
@@ -147,7 +147,6 @@ async function loadFolder(folderId) {
     );
 
     const data = await res.json();
-
     currentFiles = data.files || [];
     renderFiles(currentFiles);
 
@@ -244,7 +243,6 @@ setInterval(async () => {
 
       sentCache[id] = true;
     }
-
   });
 
 }, 10000);
