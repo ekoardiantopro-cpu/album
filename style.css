@@ -841,6 +841,101 @@ input, select {
   color: var(--text);
 }
 
+/* Inline global search */
+.global-search-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.global-search-input {
+  width: min(260px, 42vw);
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 0 12px;
+  outline: none;
+}
+
+.global-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.social-settings-list {
+  display: grid;
+  gap: 10px;
+}
+
+.social-setting-row {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) 72px minmax(160px, 1.5fr) 40px;
+  gap: 8px;
+  align-items: center;
+}
+
+.social-setting-row .settings-text-input {
+  min-width: 0;
+}
+
+.security-warning-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(8px);
+}
+
+.security-warning-card {
+  width: min(720px, 100%);
+  max-height: 88vh;
+  overflow: auto;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 25px 80px rgba(0,0,0,.45);
+}
+
+.security-warning-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.security-warning-header h3 { margin: 0; }
+
+.security-warning-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 16px 0;
+  padding: 15px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.security-warning-ok {
+  width: 100%;
+}
+
+body.security-warning-open { overflow: hidden; }
+
+@media (max-width: 700px) {
+  .global-search-input { width: min(210px, 45vw); }
+  .social-setting-row { grid-template-columns: 1fr 58px; }
+  .social-setting-row .social-url { grid-column: 1 / -1; }
+  .social-setting-row .social-remove { grid-column: 2; grid-row: 1; }
+}
+
 /* Settings modal */
 .settings-overlay {
   position: fixed;
@@ -1318,4 +1413,19 @@ body.settings-open {
   .home-status {
     min-height: 38px;
   }
+}
+
+
+.session-setting-row {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+}
+.session-setting-row label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+.session-setting-row input {
+  width: 100%;
+  box-sizing: border-box;
 }

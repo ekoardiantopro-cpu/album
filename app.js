@@ -10,6 +10,16 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
 
 // =======================
 // CONFIG
@@ -23,6 +33,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
 const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
 
@@ -45,6 +56,8 @@ const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const homeBtn = document.getElementById("homeBtn");
 const recentBtn = document.getElementById("recentBtn");
 const searchBtn = document.getElementById("searchBtn");
+const globalSearchWrap = document.getElementById("globalSearchWrap");
+const globalSearchInput = document.getElementById("globalSearchInput");
 const homeStatus = document.getElementById("homeStatus");
 const foldersEl = document.getElementById("folders");
 const runningTextTrack = document.getElementById("runningTextTrack");
@@ -69,6 +82,11 @@ const slideshowBtn = document.getElementById("slideshowBtn");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const imageContainer = document.getElementById("imageContainer");
+const activityHistory = document.getElementById("activityHistory");
+const refreshHistoryBtn = document.getElementById("refreshHistoryBtn");
+const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+const sessionTimeoutInput = document.getElementById("sessionTimeoutInput");
+const saveSessionTimeoutBtn = document.getElementById("saveSessionTimeoutBtn");
 
 
 // =======================
@@ -76,6 +94,9 @@ const imageContainer = document.getElementById("imageContainer");
 // =======================
 let historyStack = [];
 let currentFiles = [];
+let currentUser = null;
+let activityContext = { ip: "", city: "", region: "", country: "" };
+let activityContextPromise = null;
 let visibleFiles = [];
 let currentPhotoFiles = [];
 let currentPhotoIndex = 0;
@@ -106,6 +127,8 @@ let dragOriginY = 0;
 let dragging = false;
 let recentMode = false;
 let globalSearchMode = false;
+let sessionTimeoutTimer = null;
+let lastActivityAt = 0;
 let localSearchTerm = "";
 
 // Preview besar, tetapi original hanya dimuat saat zoom tinggi / download.
@@ -174,6 +197,7 @@ function isFavorite(fileId) {
 }
 
 function toggleFavorite(fileId) {
+  logActivity("Mengubah favorit", fileId);
   if (favorites.has(fileId)) {
     favorites.delete(fileId);
   } else {
@@ -400,6 +424,7 @@ function clearRecent() {
 }
 
 function renderRecent() {
+  logActivity("Membuka Recent");
   recentMode = true;
   globalSearchMode = false;
   stopSlideshow();
@@ -464,6 +489,7 @@ function goHome() {
   backBtn.style.display = "none";
   fileGrid.innerHTML = "";
   homeStatus.textContent = "Dashboard";
+  if (typeof closeGlobalSearch === "function") closeGlobalSearch();
   renderDriveButtons();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -484,31 +510,34 @@ async function fetchAllChildren(folderId) {
 }
 
 async function searchAllDrives(keyword) {
-  const query = keyword.trim().toLowerCase();
-  const results = [];
-  const seenFolders = new Set();
+  const term = String(keyword || "").trim();
+  if (!term) return [];
+
+  // Use Google Drive's indexed search so the user only has to type a keyword.
+  // This avoids walking every folder before showing results.
+  const escaped = term.replace(/'/g, "\\'");
+  const q = `name contains '${escaped}' and trashed=false`;
+  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType,thumbnailLink,modifiedTime,createdTime,size,webContentLink,parents)&orderBy=name&pageSize=1000&key=${API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error?.message || `HTTP ${res.status}`);
+
   const drives = getDrives();
-
-  async function walk(folderId, driveName, path) {
-    if (seenFolders.has(folderId)) return;
-    seenFolders.add(folderId);
-    const files = await fetchAllChildren(folderId);
-    for (const file of files) {
-      const item = { ...file, _driveName: driveName, _path: path };
-      if (matchesSearch(item, query)) results.push(item);
-      if (file.mimeType === "application/vnd.google-apps.folder") {
-        await walk(file.id, driveName, path ? `${path}/${file.name}` : file.name);
-      }
-    }
-  }
-
-  for (const drive of drives) {
-    await walk(drive.folderId, drive.name, drive.name);
-  }
-  return results;
+  const rootMap = new Map(drives.map(d => [d.folderId, d.name]));
+  return (data.files || [])
+    .filter(file => matchesSearch(file, term.toLowerCase()))
+    .map(file => {
+      const rootParent = (file.parents || []).find(parent => rootMap.has(parent));
+      return {
+        ...file,
+        _driveName: rootParent ? rootMap.get(rootParent) : "Google Drive",
+        _path: rootParent ? rootMap.get(rootParent) : ""
+      };
+    });
 }
 
 async function runGlobalSearch(keyword) {
+  logActivity("Pencarian", keyword);
   const query = String(keyword || "").trim();
   if (!query) return;
 
@@ -539,6 +568,226 @@ async function runGlobalSearch(keyword) {
 renderDriveButtons();
 
 // =======================
+// ACTIVITY HISTORY (30 HARI)
+// =======================
+const ACTIVITY_COLLECTION = "activity_logs";
+const HISTORY_DAYS = 30;
+
+async function getActivityContext() {
+  if (activityContextPromise) return activityContextPromise;
+  activityContextPromise = fetch("https://ipapi.co/json/", { cache: "no-store" })
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (data) {
+        activityContext = {
+          ip: data.ip || "",
+          city: data.city || "",
+          region: data.region || "",
+          country: data.country_name || data.country || ""
+        };
+      }
+      return activityContext;
+    })
+    .catch(() => activityContext);
+  return activityContextPromise;
+}
+
+function formatHistoryDate(value) {
+  const date = value?.toDate ? value.toDate() : new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "medium"
+  });
+}
+
+function locationLabel(item) {
+  const parts = [item.city, item.region, item.country].filter(Boolean);
+  return parts.length ? parts.join(", ") : "Lokasi tidak tersedia";
+}
+
+async function logActivity(action, details = "") {
+  const user = auth.currentUser || currentUser;
+  if (!user) return;
+
+  try {
+    const ctx = await getActivityContext();
+    await addDoc(collection(db, ACTIVITY_COLLECTION), {
+      uid: user.uid,
+      email: user.email || "",
+      action,
+      details: String(details || "").slice(0, 500),
+      ip: ctx.ip || "Tidak tersedia",
+      city: ctx.city || "",
+      region: ctx.region || "",
+      country: ctx.country || "",
+      userAgent: navigator.userAgent,
+      timestamp: new Date()
+    });
+  } catch (err) {
+    // Activity logging tidak boleh mengganggu fungsi utama album.
+    console.warn("Activity history gagal disimpan:", err);
+  }
+}
+
+async function loadActivityHistory() {
+  if (!activityHistory) return;
+  const user = auth.currentUser || currentUser;
+  if (!user) {
+    activityHistory.innerHTML = '<div class="history-empty">Login diperlukan untuk melihat history.</div>';
+    return;
+  }
+
+  activityHistory.innerHTML = '<div class="history-loading">Memuat history...</div>';
+
+  try {
+    const snapshot = await getDocs(query(
+      collection(db, ACTIVITY_COLLECTION),
+      where("uid", "==", user.uid)
+    ));
+
+    const cutoff = Date.now() - HISTORY_DAYS * 24 * 60 * 60 * 1000;
+    const items = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(item => {
+        const t = item.timestamp?.toDate ? item.timestamp.toDate().getTime() : new Date(item.timestamp || 0).getTime();
+        return t >= cutoff;
+      })
+      .sort((a, b) => {
+        const ta = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp || 0).getTime();
+        const tb = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp || 0).getTime();
+        return tb - ta;
+      });
+
+    if (!items.length) {
+      activityHistory.innerHTML = '<div class="history-empty">Belum ada aktivitas dalam 30 hari terakhir.</div>';
+      return;
+    }
+
+    activityHistory.innerHTML = items.map(item => `
+      <div class="history-item">
+        <div class="history-item-main">
+          <strong>${escapeHtml(item.action || "Aktivitas")}</strong>
+          ${item.details ? `<span>${escapeHtml(item.details)}</span>` : ""}
+        </div>
+        <div class="history-item-meta">
+          <span>🕒 ${escapeHtml(formatHistoryDate(item.timestamp))}</span>
+          <span>🌐 ${escapeHtml(item.ip || "Tidak tersedia")}</span>
+          <span>📍 ${escapeHtml(locationLabel(item))}</span>
+          <span>💻 ${escapeHtml(item.userAgent || "Tidak tersedia")}</span>
+        </div>
+      </div>
+    `).join("");
+  } catch (err) {
+    console.error("Gagal membaca activity history:", err);
+    activityHistory.innerHTML = '<div class="history-empty">History tidak dapat dibaca. Periksa Firestore Security Rules.</div>';
+  }
+}
+
+async function clearActivityHistory() {
+  const user = auth.currentUser || currentUser;
+  if (!user) return;
+
+  if (!confirm("Hapus seluruh history aktivitas akun ini selama 30 hari terakhir?")) return;
+
+  clearHistoryBtn.disabled = true;
+  try {
+    const snapshot = await getDocs(query(
+      collection(db, ACTIVITY_COLLECTION),
+      where("uid", "==", user.uid)
+    ));
+    const cutoff = Date.now() - HISTORY_DAYS * 24 * 60 * 60 * 1000;
+    const deletions = snapshot.docs.filter(doc => {
+      const data = doc.data();
+      const t = data.timestamp?.toDate ? data.timestamp.toDate().getTime() : new Date(data.timestamp || 0).getTime();
+      return t >= cutoff;
+    }).map(doc => deleteDoc(doc.ref));
+
+    await Promise.all(deletions);
+    await loadActivityHistory();
+  } catch (err) {
+    console.error(err);
+    alert("History gagal dihapus. Periksa Firestore Security Rules.");
+  } finally {
+    clearHistoryBtn.disabled = false;
+  }
+}
+
+refreshHistoryBtn?.addEventListener("click", loadActivityHistory);
+clearHistoryBtn?.addEventListener("click", clearActivityHistory);
+
+// =======================
+// SESSION TIMEOUT
+// =======================
+const SESSION_TIMEOUT_KEY = "maheva_session_timeout_minutes";
+const DEFAULT_SESSION_TIMEOUT_MINUTES = 180;
+const MIN_SESSION_TIMEOUT_MINUTES = 15;
+const MAX_SESSION_TIMEOUT_MINUTES = 1440;
+
+function getSessionTimeoutMinutes() {
+  const raw = Number.parseInt(safeStorageGet(SESSION_TIMEOUT_KEY, String(DEFAULT_SESSION_TIMEOUT_MINUTES)), 10);
+  if (!Number.isFinite(raw)) return DEFAULT_SESSION_TIMEOUT_MINUTES;
+  return Math.min(MAX_SESSION_TIMEOUT_MINUTES, Math.max(MIN_SESSION_TIMEOUT_MINUTES, raw));
+}
+
+function formatDuration(minutes) {
+  if (minutes % 60 === 0) return `${minutes / 60} jam`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h ? `${h} jam ${m} menit` : `${m} menit`;
+}
+
+function stopSessionTimeout() {
+  if (sessionTimeoutTimer) clearTimeout(sessionTimeoutTimer);
+  sessionTimeoutTimer = null;
+}
+
+function armSessionTimeout() {
+  stopSessionTimeout();
+  if (!auth.currentUser) return;
+  lastActivityAt = Date.now();
+  sessionTimeoutTimer = setTimeout(async () => {
+    if (!auth.currentUser) return;
+    const timeout = getSessionTimeoutMinutes();
+    if (Date.now() - lastActivityAt >= timeout * 60 * 1000) {
+      await logActivity("Auto logout", `Sesi berakhir setelah ${formatDuration(timeout)} tanpa aktivitas`);
+      try { await signOut(auth); } catch (err) { console.warn(err); }
+      alert(`Sesi otomatis berakhir setelah ${formatDuration(timeout)} tanpa aktivitas.`);
+    } else {
+      armSessionTimeout();
+    }
+  }, getSessionTimeoutMinutes() * 60 * 1000);
+}
+
+function registerUserActivity(event) {
+  if (!auth.currentUser) return;
+  // Ignore typing inside settings/search so ordinary typing does not create a flood of timers.
+  if (event?.type === "input") return;
+  lastActivityAt = Date.now();
+  armSessionTimeout();
+}
+
+["click", "pointerdown", "keydown", "touchstart", "scroll"].forEach(type => {
+  document.addEventListener(type, registerUserActivity, { passive: true });
+});
+
+saveSessionTimeoutBtn?.addEventListener("click", () => {
+  const value = Number.parseInt(sessionTimeoutInput.value, 10);
+  if (!Number.isFinite(value) || value < MIN_SESSION_TIMEOUT_MINUTES || value > MAX_SESSION_TIMEOUT_MINUTES) {
+    alert(`Durasi harus antara ${MIN_SESSION_TIMEOUT_MINUTES} menit dan ${MAX_SESSION_TIMEOUT_MINUTES / 60} jam.`);
+    return;
+  }
+  safeStorageSet(SESSION_TIMEOUT_KEY, String(value));
+  logActivity("Mengubah durasi sesi", `${value} menit`);
+  armSessionTimeout();
+  alert(`Auto logout disimpan: ${formatDuration(value)} tanpa aktivitas.`);
+});
+
+function restoreSessionSetting() {
+  if (sessionTimeoutInput) sessionTimeoutInput.value = String(getSessionTimeoutMinutes());
+}
+
+// =======================
 // LOGIN
 // =======================
 document.getElementById("loginBtn").onclick = async () => {
@@ -552,23 +801,33 @@ document.getElementById("loginBtn").onclick = async () => {
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
+    currentUser = auth.currentUser;
+    await logActivity("Login berhasil", `Login akun ${email}`);
   } catch (err) {
     console.error(err);
     showSecurityWarning();
     passwordInput.value = "";
+    // Failed authentication cannot be written to a Firestore collection that
+    // requires an authenticated user. Keep a local audit trail instead.
+    const failed = JSON.parse(localStorage.getItem("maheva_failed_logins") || "[]");
+    failed.unshift({ email, timestamp: Date.now(), userAgent: navigator.userAgent });
+    localStorage.setItem("maheva_failed_logins", JSON.stringify(failed.slice(0, 100)));
   }
 };
 
 logoutBtn.onclick = async () => {
   try {
+    await logActivity("Logout", "Keluar dari Maheva Family");
     await signOut(auth);
   } finally {
+    stopSessionTimeout();
     emailInput.value = "";
     passwordInput.value = "";
   }
 };
 
 onAuthStateChanged(auth, user => {
+  currentUser = user || null;
   if (user) {
     loginBox.style.display = "none";
     appContainer.style.display = "block";
@@ -580,6 +839,8 @@ onAuthStateChanged(auth, user => {
     emailInput.value = "";
     passwordInput.value = "";
     goHome();
+    armSessionTimeout();
+    restoreSessionSetting();
   } else {
     loginBox.style.display = "block";
     appContainer.style.display = "none";
@@ -592,6 +853,7 @@ onAuthStateChanged(auth, user => {
     closeViewer();
     emailInput.value = "";
     passwordInput.value = "";
+    stopSessionTimeout();
   }
 });
 
@@ -600,6 +862,7 @@ onAuthStateChanged(auth, user => {
 // FOLDER
 // =======================
 async function loadFolder(folderId, driveName = "") {
+  logActivity("Membuka folder", `${driveName || "Drive"} • ${folderId}`);
   historyStack.push(folderId);
   recentMode = false;
   globalSearchMode = false;
@@ -610,6 +873,7 @@ async function loadFolder(folderId, driveName = "") {
     currentFiles = await fetchFolder(folderId);
     renderCurrentView();
     saveRecent({ type: "folder", id: folderId, name: driveName || drive?.name || "Folder", driveName: driveName || drive?.name || "Drive", path: driveName || "" });
+    logActivity("Membuka folder", `${driveName || drive?.name || "Folder"} (${folderId})`);
   } catch (err) {
     console.error(err);
     alert("Error load folder: " + err.message);
@@ -741,6 +1005,7 @@ function renderFiles(files) {
 
       if (isFolder) {
         saveRecent({ type: "folder", id: file.id, name: file.name, driveName: file._driveName || homeStatus.textContent, path: file._path || file.name });
+        logActivity("Membuka folder", `${file.name} (${file._driveName || homeStatus.textContent})`);
         loadFolder(file.id, file._driveName || homeStatus.textContent);
         return;
       }
@@ -799,18 +1064,52 @@ clearSelectionBtn.onclick = clearSelection;
 // HOME / RECENT / GLOBAL SEARCH UI
 // =======================
 recentBtn.onclick = renderRecent;
-searchBtn.onclick = async () => {
+let globalSearchTimer = null;
+function closeGlobalSearch() {
+  globalSearchWrap.style.display = "none";
+  globalSearchInput.value = "";
+  searchBtn.textContent = "⌕";
+  searchBtn.title = "Cari seluruh album";
+  searchBtn.setAttribute("aria-label", "Cari seluruh album");
+}
+
+searchBtn.onclick = () => {
   if (searchBtn.disabled) return;
-  const keyword = window.prompt("Masukkan kata kunci pencarian seluruh album:", "");
-  if (keyword && keyword.trim()) {
-    await runGlobalSearch(keyword.trim());
+  const opening = globalSearchWrap.style.display === "none";
+  if (opening) {
+    globalSearchWrap.style.display = "block";
+    searchBtn.textContent = "✕";
+    searchBtn.title = "Tutup pencarian";
+    searchBtn.setAttribute("aria-label", "Tutup pencarian");
+    setTimeout(() => globalSearchInput.focus(), 0);
+  } else {
+    closeGlobalSearch();
+    goHome();
   }
 };
+
+globalSearchInput.addEventListener("input", () => {
+  clearTimeout(globalSearchTimer);
+  const keyword = globalSearchInput.value.trim();
+  if (!keyword) {
+    goHome();
+    return;
+  }
+  globalSearchTimer = setTimeout(() => runGlobalSearch(keyword), 350);
+});
+
+globalSearchInput.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeGlobalSearch();
+    goHome();
+  }
+});
 
 // =======================
 // VIEWER
 // =======================
 function openViewer(index) {
+  if (currentPhotoFiles[index]) logActivity("Membuka foto", currentPhotoFiles[index].name);
   if (!currentPhotoFiles.length || index < 0) return;
 
   currentPhotoIndex = index;
@@ -866,6 +1165,7 @@ function showPhoto(index) {
 
   const file = currentPhotoFiles[index];
   saveRecent({ type: "file", ...file, driveName: file._driveName || homeStatus.textContent, path: file._path || "" });
+  logActivity("Membuka foto", `${file.name} (${file._driveName || homeStatus.textContent})`);
 
   viewerLoading.style.display = "block";
   viewerImage.style.display = "none";
@@ -1026,6 +1326,8 @@ copyLinkBtn.onclick = async () => {
 // DOWNLOAD ORIGINAL
 // =======================
 downloadBtn.addEventListener("click", () => {
+  const file = currentPhotoFiles[currentPhotoIndex];
+  if (file) logActivity("Download original", file.name);
   const file = currentPhotoFiles[currentPhotoIndex];
   if (!file) return;
 
@@ -1216,6 +1518,12 @@ imageContainer.addEventListener("touchend", event => {
 // =======================
 // KEYBOARD
 // =======================
+closeSecurityWarningBtn.onclick = closeSecurityWarning;
+securityWarningOkBtn.onclick = closeSecurityWarning;
+securityWarningModal.addEventListener("click", event => {
+  if (event.target === securityWarningModal) closeSecurityWarning();
+});
+
 document.addEventListener("keydown", event => {
   if (viewer.style.display !== "flex") return;
 
@@ -1386,17 +1694,15 @@ const removeBackgroundBtn = document.getElementById("removeBackgroundBtn");
 const themeOptions = [...document.querySelectorAll(".theme-option")];
 const backgroundOptions = [...document.querySelectorAll(".background-option")];
 const accentOptions = [...document.querySelectorAll(".accent-option")];
-const socialInstagramInput = document.getElementById("socialInstagramInput");
-const socialLinkedinInput = document.getElementById("socialLinkedinInput");
-const socialYoutubeInput = document.getElementById("socialYoutubeInput");
-const socialFacebookInput = document.getElementById("socialFacebookInput");
+const socialSettingsList = document.getElementById("socialSettingsList");
+const addSocialBtn = document.getElementById("addSocialBtn");
 const saveSocialLinksBtn = document.getElementById("saveSocialLinksBtn");
 const securityWarningInput = document.getElementById("securityWarningInput");
 const saveSecurityWarningBtn = document.getElementById("saveSecurityWarningBtn");
-const socialInstagram = document.getElementById("socialInstagram");
-const socialLinkedin = document.getElementById("socialLinkedin");
-const socialYoutube = document.getElementById("socialYoutube");
-const socialFacebook = document.getElementById("socialFacebook");
+const securityWarningModal = document.getElementById("securityWarningModal");
+const securityWarningMessage = document.getElementById("securityWarningMessage");
+const closeSecurityWarningBtn = document.getElementById("closeSecurityWarningBtn");
+const securityWarningOkBtn = document.getElementById("securityWarningOkBtn");
 
 const THEME_KEY = "eko_album_theme";
 const BG_KEY = "eko_album_background";
@@ -1596,13 +1902,32 @@ function restoreAppearanceSettings() {
   }
 }
 
+const DEFAULT_SOCIALS = [
+  { id: "instagram", name: "Instagram", url: "", icon: "◎" },
+  { id: "linkedin", name: "LinkedIn", url: "", icon: "in" },
+  { id: "youtube", name: "YouTube", url: "", icon: "▶" },
+  { id: "facebook", name: "Facebook", url: "", icon: "f" }
+];
+
 function getSocialLinks() {
+  const raw = safeStorageGet(SOCIAL_LINKS_KEY, "");
+  if (!raw) return DEFAULT_SOCIALS.map(x => ({...x}));
   try {
-    const data = JSON.parse(safeStorageGet(SOCIAL_LINKS_KEY, "{}"));
-    return data && typeof data === "object" ? data : {};
-  } catch {
-    return {};
-  }
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    // Migrate the old v6 object format automatically.
+    if (parsed && typeof parsed === "object") {
+      return DEFAULT_SOCIALS.map(item => ({
+        ...item,
+        url: parsed[item.id] || ""
+      }));
+    }
+  } catch {}
+  return DEFAULT_SOCIALS.map(x => ({...x}));
+}
+
+function saveSocials(items) {
+  safeStorageSet(SOCIAL_LINKS_KEY, JSON.stringify(items));
 }
 
 function normalizeUrl(value) {
@@ -1612,37 +1937,82 @@ function normalizeUrl(value) {
   return `https://${raw}`;
 }
 
-function applySocialLinks() {
-  const links = getSocialLinks();
-  const items = [
-    [socialInstagram, links.instagram],
-    [socialLinkedin, links.linkedin],
-    [socialYoutube, links.youtube],
-    [socialFacebook, links.facebook]
-  ];
-  items.forEach(([el, href]) => {
-    const url = normalizeUrl(href);
-    el.href = url || "#";
-    el.classList.toggle("is-disabled", !url);
-    el.setAttribute("aria-disabled", String(!url));
-    el.onclick = event => {
-      if (!url) event.preventDefault();
+function renderSocialSettings() {
+  const socials = getSocialLinks();
+  socialSettingsList.innerHTML = "";
+  socials.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "social-setting-row";
+    row.innerHTML = `
+      <input class="settings-text-input social-name" type="text" maxlength="40" placeholder="Nama" value="">
+      <input class="settings-text-input social-icon" type="text" maxlength="6" placeholder="Icon" value="">
+      <input class="settings-text-input social-url" type="url" placeholder="https://..." value="">
+      <button class="small-action social-remove" type="button" title="Hapus sosial media">✕</button>
+    `;
+    row.querySelector(".social-name").value = item.name || "";
+    row.querySelector(".social-icon").value = item.icon || "🔗";
+    row.querySelector(".social-url").value = item.url || "";
+    row.querySelector(".social-remove").onclick = () => {
+      const next = getSocialLinks().filter((_, i) => i !== index);
+      saveSocials(next);
+      renderSocialSettings();
+      applySocialLinks();
     };
+    socialSettingsList.appendChild(row);
+  });
+}
+
+function collectSocialSettings() {
+  return [...socialSettingsList.querySelectorAll(".social-setting-row")].map((row, index) => ({
+    id: getSocialLinks()[index]?.id || `social_${Date.now()}_${index}`,
+    name: row.querySelector(".social-name").value.trim() || "Social Media",
+    icon: row.querySelector(".social-icon").value.trim() || "🔗",
+    url: row.querySelector(".social-url").value.trim()
+  }));
+}
+
+function applySocialLinks() {
+  const footer = document.querySelector(".social-links");
+  if (!footer) return;
+  footer.innerHTML = "";
+  getSocialLinks().forEach(item => {
+    const a = document.createElement("a");
+    const url = normalizeUrl(item.url);
+    a.href = url || "#";
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.title = item.name || "Social Media";
+    a.setAttribute("aria-label", item.name || "Social Media");
+    if (!url) {
+      a.classList.add("is-disabled");
+      a.setAttribute("aria-disabled", "true");
+      a.addEventListener("click", e => e.preventDefault());
+    }
+    const span = document.createElement("span");
+    span.textContent = item.icon || "🔗";
+    a.appendChild(span);
+    footer.appendChild(a);
   });
 }
 
 function restoreSocialLinks() {
-  const links = getSocialLinks();
-  socialInstagramInput.value = links.instagram || "";
-  socialLinkedinInput.value = links.linkedin || "";
-  socialYoutubeInput.value = links.youtube || "";
-  socialFacebookInput.value = links.facebook || "";
+  renderSocialSettings();
   applySocialLinks();
 }
 
 function showSecurityWarning() {
   const message = safeStorageGet(SECURITY_WARNING_KEY, DEFAULT_SECURITY_WARNING);
-  alert(message);
+  securityWarningMessage.textContent = message;
+  securityWarningModal.style.display = "flex";
+  securityWarningModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("security-warning-open");
+  setTimeout(() => closeSecurityWarningBtn.focus(), 0);
+}
+
+function closeSecurityWarning() {
+  securityWarningModal.style.display = "none";
+  securityWarningModal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("security-warning-open");
 }
 
 function restoreSecurityWarning() {
@@ -1652,8 +2022,11 @@ function restoreSecurityWarning() {
 function openSettings() {
   siteTitleInput.value = safeStorageGet(SITE_TITLE_KEY, "Maheva Family");
   restoreSocialLinks();
+restoreSessionSetting();
   restoreSecurityWarning();
   renderDriveSettings();
+  restoreSessionSetting();
+  loadActivityHistory();
   settingsPanel.style.display = "flex";
   settingsPanel.setAttribute("aria-hidden", "false");
   document.body.classList.add("settings-open");
@@ -1665,7 +2038,7 @@ function closeSettings() {
   document.body.classList.remove("settings-open");
 }
 
-settingsBtn.onclick = openSettings;
+settingsBtn.onclick = () => { logActivity("Membuka Settings"); openSettings(); };
 closeSettingsBtn.onclick = closeSettings;
 
 settingsPanel.addEventListener("click", event => {
@@ -1709,15 +2082,19 @@ saveRunningTextBtn.onclick = () => {
 });
 
 saveSocialLinksBtn.onclick = () => {
-  const links = {
-    instagram: socialInstagramInput.value.trim(),
-    linkedin: socialLinkedinInput.value.trim(),
-    youtube: socialYoutubeInput.value.trim(),
-    facebook: socialFacebookInput.value.trim()
-  };
-  safeStorageSet(SOCIAL_LINKS_KEY, JSON.stringify(links));
+  logActivity("Mengubah sosial media");
+  saveSocials(collectSocialSettings());
+  renderSocialSettings();
   applySocialLinks();
-  alert("Link sosial media disimpan.");
+  alert("Sosial media disimpan.");
+};
+
+addSocialBtn.onclick = () => {
+  logActivity("Menambah sosial media");
+  const socials = getSocialLinks();
+  socials.push({ id: `social_${Date.now()}`, name: "Sosial Media Baru", url: "", icon: "🔗" });
+  saveSocials(socials);
+  renderSocialSettings();
 };
 
 saveSecurityWarningBtn.onclick = () => {
@@ -1779,6 +2156,10 @@ backgroundUpload.onchange = event => {
 };
 
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && securityWarningModal.style.display === "flex") {
+    closeSecurityWarning();
+    return;
+  }
   if (event.key === "Escape" && settingsPanel.style.display === "flex") {
     closeSettings();
   }

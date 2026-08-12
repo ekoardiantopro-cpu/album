@@ -52,6 +52,9 @@
       </select>
 
       <button id="favoritesBtn" class="icon-action" title="Tampilkan favorit" aria-label="Tampilkan favorit">♡</button>
+      <div id="globalSearchWrap" class="global-search-wrap" style="display:none;">
+        <input id="globalSearchInput" class="global-search-input" type="search" placeholder="Cari seluruh album..." autocomplete="off" spellcheck="false" aria-label="Cari seluruh album">
+      </div>
       <button id="searchBtn" class="icon-action" title="Cari seluruh album" aria-label="Cari seluruh album">⌕</button>
       <button id="selectModeBtn" class="icon-action" title="Pilih foto" aria-label="Pilih foto">☑</button>
       <button id="downloadSelectedBtn" class="icon-action" title="Download foto terpilih" aria-label="Download foto terpilih" style="display:none;">⬇</button>
@@ -171,14 +174,32 @@
 
     <div class="settings-section">
       <h4>Media Sosial</h4>
-      <p class="settings-note">Masukkan link sosial media. Kosongkan jika tidak ingin menampilkannya.</p>
-      <div class="social-settings-grid">
-        <input id="socialInstagramInput" class="settings-text-input" type="url" placeholder="Instagram URL">
-        <input id="socialLinkedinInput" class="settings-text-input" type="url" placeholder="LinkedIn URL">
-        <input id="socialYoutubeInput" class="settings-text-input" type="url" placeholder="YouTube URL">
-        <input id="socialFacebookInput" class="settings-text-input" type="url" placeholder="Facebook URL">
+      <p class="settings-note">Atur nama, link, dan icon. Anda juga bisa menambahkan sosial media lain.</p>
+      <div id="socialSettingsList" class="social-settings-list"></div>
+      <button id="addSocialBtn" class="secondary-btn">＋ Tambahkan sosial media</button>
+      <button id="saveSocialLinksBtn" class="secondary-btn">Simpan sosial media</button>
+    </div>
+
+    <div class="settings-section">
+      <h4>🕘 Historical Activity</h4>
+      <p class="settings-note">Menampilkan aktivitas akun yang sedang login selama 30 hari terakhir, termasuk waktu, aktivitas, IP publik, dan lokasi perkiraan (kota/negara) jika tersedia.</p>
+      <div class="history-actions">
+        <button id="refreshHistoryBtn" class="secondary-btn">↻ Refresh history</button>
+        <button id="clearHistoryBtn" class="secondary-btn danger-btn">🗑 Clear history 30 hari</button>
       </div>
-      <button id="saveSocialLinksBtn" class="secondary-btn">Simpan link sosial media</button>
+      <div id="activityHistory" class="activity-history">
+        <div class="history-empty">Belum ada aktivitas.</div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h4>⏱️ Sesi & Auto Logout</h4>
+      <p class="settings-note">Akun akan otomatis logout jika tidak ada aktivitas selama durasi yang dipilih. Default: 3 jam.</p>
+      <div class="session-setting-row">
+        <label for="sessionTimeoutInput">Durasi tanpa aktivitas (menit)</label>
+        <input id="sessionTimeoutInput" class="settings-text-input" type="number" min="15" max="1440" step="15" value="180">
+      </div>
+      <button id="saveSessionTimeoutBtn" class="secondary-btn">Simpan durasi sesi</button>
     </div>
 
     <div class="settings-section">
@@ -189,6 +210,18 @@
     </div>
 
     <div class="settings-note">Pengaturan ini tersimpan di browser/perangkat yang sedang digunakan.</div>
+  </div>
+</div>
+
+<!-- LOGIN SECURITY WARNING -->
+<div id="securityWarningModal" class="security-warning-overlay" style="display:none;" aria-hidden="true">
+  <div class="security-warning-card" role="alertdialog" aria-modal="true" aria-labelledby="securityWarningTitle">
+    <div class="security-warning-header">
+      <h3 id="securityWarningTitle">⚠️ Peringatan Keamanan</h3>
+      <button id="closeSecurityWarningBtn" class="settings-close" title="Tutup" aria-label="Tutup">✕</button>
+    </div>
+    <pre id="securityWarningMessage" class="security-warning-message"></pre>
+    <button id="securityWarningOkBtn" class="security-warning-ok">Tutup</button>
   </div>
 </div>
 
