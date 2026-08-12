@@ -1506,6 +1506,12 @@ imageContainer.addEventListener("touchend", event => {
 // =======================
 // KEYBOARD
 // =======================
+closeSecurityWarningBtn.onclick = closeSecurityWarning;
+securityWarningOkBtn.onclick = closeSecurityWarning;
+securityWarningModal.addEventListener("click", event => {
+  if (event.target === securityWarningModal) closeSecurityWarning();
+});
+
 document.addEventListener("keydown", event => {
   if (viewer.style.display !== "flex") return;
 
@@ -1685,17 +1691,6 @@ const securityWarningModal = document.getElementById("securityWarningModal");
 const securityWarningMessage = document.getElementById("securityWarningMessage");
 const closeSecurityWarningBtn = document.getElementById("closeSecurityWarningBtn");
 const securityWarningOkBtn = document.getElementById("securityWarningOkBtn");
-
-// Security warning handlers must be attached only after all related DOM
-// references have been initialized. This prevents a temporal-dead-zone
-// error from stopping the rest of this module during page startup.
-if (closeSecurityWarningBtn) closeSecurityWarningBtn.onclick = closeSecurityWarning;
-if (securityWarningOkBtn) securityWarningOkBtn.onclick = closeSecurityWarning;
-if (securityWarningModal) {
-  securityWarningModal.addEventListener("click", event => {
-    if (event.target === securityWarningModal) closeSecurityWarning();
-  });
-}
 
 const THEME_KEY = "eko_album_theme";
 const BG_KEY = "eko_album_background";
