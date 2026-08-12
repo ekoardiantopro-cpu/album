@@ -10,7 +10,10 @@
 
 <header>
   <h2>📁 EKO Drive Manager</h2>
-  <button id="logoutBtn" style="display:none;">Logout</button>
+  <div class="header-actions">
+    <button id="settingsBtn" class="header-icon" title="Pengaturan tampilan" aria-label="Pengaturan tampilan">⚙️</button>
+    <button id="logoutBtn" style="display:none;">Logout</button>
+  </div>
 </header>
 
 <!-- LOGIN -->
@@ -34,7 +37,7 @@
 
   <hr>
 
-  <!-- 🔥 JADWAL WHATSAPP -->
+  <!-- JADWAL WHATSAPP -->
   <h3>📲 Jadwal WhatsApp</h3>
 
   <input id="phone" placeholder="+628xxxx"><br><br>
@@ -45,24 +48,96 @@
 
   <hr>
 
-  <!-- SEARCH -->
-  <input type="text" id="searchInput" placeholder="🔍 Cari file...">
+  <!-- SEARCH + SORT -->
+  <div class="library-toolbar">
+    <input type="search" id="searchInput" placeholder="🔍 Cari nama, tanggal...">
+
+    <div class="library-actions">
+      <select id="sortSelect" title="Urutkan">
+        <option value="newest">Terbaru</option>
+        <option value="oldest">Terlama</option>
+        <option value="nameAsc">Nama A-Z</option>
+        <option value="nameDesc">Nama Z-A</option>
+      </select>
+
+      <button id="favoritesBtn" class="icon-action" title="Tampilkan favorit" aria-label="Tampilkan favorit">♡</button>
+      <button id="selectModeBtn" class="icon-action" title="Pilih foto" aria-label="Pilih foto">☑</button>
+      <button id="downloadSelectedBtn" class="icon-action" title="Download foto terpilih" aria-label="Download foto terpilih" style="display:none;">⬇</button>
+    </div>
+  </div>
 
   <button id="backBtn" style="display:none;">⬅️ Kembali</button>
+
+  <div id="selectionBar" style="display:none;">
+    <span><b id="selectedCount">0</b> dipilih</span>
+    <button id="clearSelectionBtn" class="small-action">Batal</button>
+  </div>
 
   <div id="fileGrid"></div>
 </div>
 
-<!-- VIEWER -->
+<!-- SETTINGS -->
+<div id="settingsPanel" class="settings-overlay" style="display:none;" aria-hidden="true">
+  <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="settings-header">
+      <div>
+        <h3 id="settingsTitle">⚙️ Pengaturan Tampilan</h3>
+        <p>Sesuaikan tampilan album keluarga di perangkat ini.</p>
+      </div>
+      <button id="closeSettingsBtn" class="settings-close" title="Tutup" aria-label="Tutup">✕</button>
+    </div>
+
+    <div class="settings-section">
+      <h4>Mode tampilan</h4>
+      <div class="theme-options">
+        <button class="theme-option" data-theme="dark">🌙 <span>Dark</span></button>
+        <button class="theme-option" data-theme="light">☀️ <span>Light</span></button>
+        <button class="theme-option" data-theme="system">💻 <span>System</span></button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h4>Background</h4>
+      <div class="background-options">
+        <button class="background-option" data-bg="default">🎨 <span>Default</span></button>
+        <button class="background-option" data-bg="sunset">🌅 <span>Sunset</span></button>
+        <button class="background-option" data-bg="ocean">🌊 <span>Ocean</span></button>
+        <button class="background-option" data-bg="forest">🌿 <span>Forest</span></button>
+      </div>
+
+      <label class="upload-background">
+        <span>🖼️ Pilih foto keluarga sebagai background</span>
+        <input id="backgroundUpload" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+      </label>
+      <button id="removeBackgroundBtn" class="secondary-btn">↩ Kembalikan background</button>
+    </div>
+
+    <div class="settings-section">
+      <h4>Warna aksen</h4>
+      <div class="accent-row">
+        <button class="accent-option" data-accent="#3b82f6" style="--accent-color:#3b82f6" title="Biru" aria-label="Biru"></button>
+        <button class="accent-option" data-accent="#8b5cf6" style="--accent-color:#8b5cf6" title="Ungu" aria-label="Ungu"></button>
+        <button class="accent-option" data-accent="#10b981" style="--accent-color:#10b981" title="Hijau" aria-label="Hijau"></button>
+        <button class="accent-option" data-accent="#f59e0b" style="--accent-color:#f59e0b" title="Oranye" aria-label="Oranye"></button>
+        <button class="accent-option" data-accent="#ec4899" style="--accent-color:#ec4899" title="Pink" aria-label="Pink"></button>
+      </div>
+    </div>
+
+    <div class="settings-note">Pengaturan ini tersimpan di browser/perangkat yang sedang digunakan.</div>
+  </div>
+</div>
+
+<!-- PHOTO VIEWER -->
 <div id="viewer" style="display:none;" aria-hidden="true">
 
   <div class="viewer-toolbar">
     <button id="closeViewer" class="viewer-btn" title="Tutup" aria-label="Tutup">✕</button>
 
     <div class="viewer-actions">
-      <button id="fullscreenBtn" class="viewer-btn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+      <button id="fullscreenBtn" class="viewer-btn" title="Fullscreen foto" aria-label="Fullscreen foto">⛶</button>
       <button id="copyLinkBtn" class="viewer-btn" title="Salin link" aria-label="Salin link">🔗</button>
       <a id="downloadBtn" class="viewer-btn" href="#" target="_blank" rel="noopener" title="Download original" aria-label="Download original">⬇</a>
+      <button id="favoriteViewerBtn" class="viewer-btn" title="Favorit" aria-label="Favorit">♡</button>
       <button id="slideshowBtn" class="viewer-btn" title="Slideshow" aria-label="Slideshow">▶</button>
     </div>
   </div>
@@ -72,6 +147,7 @@
 
     <div id="imageContainer">
       <div id="viewerLoading" aria-live="polite">⏳</div>
+      <div id="viewerHint">Double-click / scroll untuk zoom</div>
       <img id="viewerImage" src="" alt="Preview foto" draggable="false">
     </div>
 
@@ -84,6 +160,9 @@
   </div>
 </div>
 
+<!-- JSZip untuk download beberapa foto sebagai ZIP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="module" src="app.js"></script>
 
 </body>
