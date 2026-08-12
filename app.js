@@ -45,7 +45,6 @@ const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const homeBtn = document.getElementById("homeBtn");
 const recentBtn = document.getElementById("recentBtn");
 const searchBtn = document.getElementById("searchBtn");
-const searchInput = document.getElementById("searchInput");
 const homeStatus = document.getElementById("homeStatus");
 const foldersEl = document.getElementById("folders");
 const runningTextTrack = document.getElementById("runningTextTrack");
@@ -58,9 +57,6 @@ const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 
 const viewerImage = document.getElementById("viewerImage");
-const viewerVideo = document.getElementById("viewerVideo");
-const viewerFrame = document.getElementById("viewerFrame");
-const viewerAudio = document.getElementById("viewerAudio");
 const viewerLoading = document.getElementById("viewerLoading");
 const viewerHint = document.getElementById("viewerHint");
 const viewerFileName = document.getElementById("viewerFileName");
@@ -139,46 +135,23 @@ function isImageFile(file) {
 }
 
 function isVideoFile(file) {
-  return Boolean(file && (
-    file.mimeType?.startsWith("video/") ||
-    /\.(mp4|webm|mov|m4v|avi|mkv)$/i.test(file.name)
-  ));
+  return Boolean(file && (file.mimeType?.startsWith("video/") || /\.(mp4|webm|mov|m4v|avi|mkv)$/i.test(file.name)));
 }
 
 function isAudioFile(file) {
-  return Boolean(file && (
-    file.mimeType?.startsWith("audio/") ||
-    /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(file.name)
-  ));
+  return Boolean(file && (file.mimeType?.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(file.name)));
 }
 
 function isPdfFile(file) {
-  return Boolean(file && (
-    file.mimeType === "application/pdf" ||
-    /\.pdf$/i.test(file.name)
-  ));
+  return Boolean(file && (file.mimeType === "application/pdf" || /\.pdf$/i.test(file.name)));
 }
 
 function isTextPreviewFile(file) {
-  return Boolean(file && (
-    file.mimeType?.startsWith("text/") ||
-    /\.(txt|csv|json|xml|md)$/i.test(file.name)
-  ));
+  return Boolean(file && (file.mimeType?.startsWith("text/") || /\.(txt|csv|json|xml|md)$/i.test(file.name)));
 }
 
-function getDirectPreviewUrl(file) {
-  return getOriginalViewUrl(file.id);
-}
-
-function getFileIconUrl(file) {
-  const name = String(file?.name || "").toLowerCase();
-  if (isPdfFile(file)) return "https://cdn-icons-png.flaticon.com/512/337/337946.png";
-  if (isVideoFile(file)) return "https://cdn-icons-png.flaticon.com/512/2991/2991148.png";
-  if (isAudioFile(file)) return "https://cdn-icons-png.flaticon.com/512/727/727245.png";
-  if (/\.(doc|docx)$/i.test(name)) return "https://cdn-icons-png.flaticon.com/512/281/281760.png";
-  if (/\.(xls|xlsx|csv)$/i.test(name)) return "https://cdn-icons-png.flaticon.com/512/732/732220.png";
-  if (/\.(ppt|pptx)$/i.test(name)) return "https://cdn-icons-png.flaticon.com/512/732/732224.png";
-  return "https://cdn-icons-png.flaticon.com/512/109/109612.png";
+function isPreviewableFile(file) {
+  return isImageFile(file) || isVideoFile(file) || isAudioFile(file) || isPdfFile(file) || isTextPreviewFile(file);
 }
 
 function getThumbnailUrl(file, size = 400) {
@@ -572,7 +545,6 @@ async function runGlobalSearch(keyword) {
     historyStack = [];
     backBtn.style.display = "none";
     homeStatus.textContent = `Hasil pencarian: ${results.length}`;
-    searchInput.value = query;
     renderFiles(visibleFiles);
     window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (err) {
@@ -604,6 +576,7 @@ async function performLogin() {
     console.error(err);
     showSecurityWarning();
     passwordInput.value = "";
+    passwordInput.focus();
   }
 }
 
@@ -654,20 +627,11 @@ onAuthStateChanged(auth, user => {
   }
 });
 
-
-// Home always returns to the initial login screen.
+// Home selalu kembali ke halaman login awal.
 homeBtn.onclick = async () => {
-  try {
-    await signOut(auth);
-  } catch (err) {
-    console.error(err);
-  } finally {
-    closeSettings();
-    closeViewer();
-    emailInput.value = "";
-    passwordInput.value = "";
-  }
+  try { await signOut(auth); } catch (err) { console.error(err); }
 };
+
 
 // =======================
 // FOLDER
@@ -750,7 +714,7 @@ function renderFiles(files) {
       ? "https://cdn-icons-png.flaticon.com/512/716/716784.png"
       : isImageFile(file)
         ? getThumbnailUrl(file, 600)
-        : getFileIconUrl(file);
+        : "https://cdn-icons-png.flaticon.com/512/109/109612.png";
 
     div.innerHTML = `
       ${
@@ -818,24 +782,12 @@ function renderFiles(files) {
         return;
       }
 
-      const canPreview =
-        isImageFile(file) ||
-        isVideoFile(file) ||
-        isAudioFile(file) ||
-        isPdfFile(file) ||
-        isTextPreviewFile(file);
-
-      if (!canPreview) {
+      if (!isPreviewableFile(file)) {
+        window.open(getDriveViewUrl(file.id), "_blank", "noopener");
         return;
       }
 
-      const previewFiles = files.filter(item =>
-        isImageFile(item) ||
-        isVideoFile(item) ||
-        isAudioFile(item) ||
-        isPdfFile(item) ||
-        isTextPreviewFile(item)
-      );
+      const previewFiles = files.filter(isPreviewableFile);
       const index = previewFiles.findIndex(item => item.id === file.id);
 
       if (index >= 0) {
@@ -884,26 +836,17 @@ clearSelectionBtn.onclick = clearSelection;
 // HOME / RECENT / GLOBAL SEARCH UI
 // =======================
 recentBtn.onclick = renderRecent;
-
-searchBtn.onclick = () => {
+searchBtn.onclick = async () => {
   if (searchBtn.disabled) return;
-  searchInput.focus();
-  searchInput.select();
+  const keyword = searchInput.value.trim();
+  if (keyword) await runGlobalSearch(keyword);
 };
 
 searchInput.addEventListener("keydown", async event => {
   if (event.key !== "Enter") return;
   event.preventDefault();
   const keyword = searchInput.value.trim();
-  if (!keyword) return;
-  await runGlobalSearch(keyword);
-});
-
-searchInput.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    searchInput.value = "";
-    searchInput.blur();
-  }
+  if (keyword) await runGlobalSearch(keyword);
 });
 
 // =======================
@@ -922,32 +865,20 @@ function openViewer(index) {
 }
 
 function getPreviewUrl(file) {
-  // Gunakan thumbnail Drive hanya sebagai fallback.
-  // Viewer utama sekarang langsung memuat file original agar foto tidak kecil.
-  return `https://drive.google.com/thumbnail?id=${encodeURIComponent(file.id)}&sz=w2400`;
+  if (isImageFile(file)) return getOriginalViewUrl(file.id);
+  return getOriginalDownloadUrl(file.id);
 }
 
-function loadOriginalForZoom() {
-  // Foto viewer sudah menggunakan original sejak awal.
-  // Fungsi dipertahankan agar alur zoom lama tetap kompatibel.
-  return;
-}
+function loadOriginalForZoom() { return; }
 
 function prefetchAround(index) {
-  const indexes = [
-    index + 1,
-    index + 2,
-    index - 1
-  ];
-
+  const indexes = [index + 1, index + 2, index - 1];
   indexes.forEach(i => {
     if (i < 0 || i >= currentPhotoFiles.length) return;
-
     const file = currentPhotoFiles[i];
+    if (!isImageFile(file)) return;
     const url = getOriginalViewUrl(file.id);
-
     if (preloadedUrls.has(url)) return;
-
     const img = new Image();
     img.decoding = "async";
     img.src = url;
@@ -955,117 +886,86 @@ function prefetchAround(index) {
   });
 }
 
-function resetViewerMedia() {
+function hideViewerMedia() {
   viewerImage.style.display = "none";
   viewerVideo.style.display = "none";
-  viewerFrame.style.display = "none";
   viewerAudio.style.display = "none";
-
-  viewerImage.onload = null;
-  viewerImage.onerror = null;
-
+  viewerFrame.style.display = "none";
+  viewerImage.src = "";
   viewerVideo.pause();
   viewerVideo.removeAttribute("src");
-  viewerVideo.load();
-
   viewerAudio.pause();
   viewerAudio.removeAttribute("src");
-  viewerAudio.load();
-
-  viewerFrame.removeAttribute("src");
+  viewerFrame.src = "about:blank";
 }
 
 function showPhoto(index) {
   if (!currentPhotoFiles.length) return;
-
   if (index < 0) index = currentPhotoFiles.length - 1;
   if (index >= currentPhotoFiles.length) index = 0;
 
   currentPhotoIndex = index;
-
   const file = currentPhotoFiles[index];
   saveRecent({ type: "file", ...file, driveName: file._driveName || homeStatus.textContent, path: file._path || "" });
-
   viewerLoading.style.display = "block";
-  resetViewerMedia();
+  hideViewerMedia();
   resetZoom();
-
-  isOriginalLoaded = false;
-  originalLoadStarted = false;
-
   viewerFileName.textContent = file.name;
   viewerCounter.textContent = `${index + 1} / ${currentPhotoFiles.length}`;
-
   downloadBtn.href = getOriginalDownloadUrl(file.id);
   downloadBtn.download = file.name;
   updateViewerFavorite();
 
-  const directUrl = getDirectPreviewUrl(file);
-  const fallbackUrl = getFallbackOriginalViewUrl(file.id);
-
-  const loaded = () => {
-    viewerLoading.style.display = "none";
-    prefetchAround(index);
-  };
+  const url = getPreviewUrl(file);
 
   if (isImageFile(file)) {
-    let finished = false;
     viewerImage.onload = () => {
-      if (finished) return;
-      finished = true;
-      isOriginalLoaded = true;
-      loaded();
+      viewerLoading.style.display = "none";
       viewerImage.style.display = "block";
+      prefetchAround(index);
     };
     viewerImage.onerror = () => {
-      if (finished) return;
-      if (viewerImage.src !== fallbackUrl) {
-        viewerImage.src = fallbackUrl;
-        return;
-      }
-      finished = true;
       viewerLoading.style.display = "none";
-      alert("File tidak dapat dipreview. Periksa izin file Google Drive.");
+      alert("File tidak dapat dimuat. Periksa izin file Google Drive.");
     };
-    viewerImage.src = directUrl;
+    viewerImage.src = url;
     return;
   }
 
   if (isVideoFile(file)) {
-    viewerVideo.onloadeddata = loaded;
-    viewerVideo.onerror = () => {
-      viewerLoading.style.display = "none";
-      alert("Video tidak dapat dipreview di browser ini.");
-    };
-    viewerVideo.src = directUrl;
+    viewerVideo.onloadeddata = () => { viewerLoading.style.display = "none"; };
+    viewerVideo.onerror = () => { viewerLoading.style.display = "none"; alert("Video tidak dapat diputar. Periksa izin file Google Drive."); };
+    viewerVideo.src = url;
     viewerVideo.style.display = "block";
+    viewerVideo.load();
     return;
   }
 
   if (isAudioFile(file)) {
-    viewerAudio.onloadeddata = loaded;
-    viewerAudio.onerror = () => {
-      viewerLoading.style.display = "none";
-      alert("Audio tidak dapat dipreview di browser ini.");
-    };
-    viewerAudio.src = directUrl;
+    viewerAudio.onloadeddata = () => { viewerLoading.style.display = "none"; };
+    viewerAudio.onerror = () => { viewerLoading.style.display = "none"; alert("Audio tidak dapat diputar. Periksa izin file Google Drive."); };
+    viewerAudio.src = url;
     viewerAudio.style.display = "block";
+    viewerAudio.load();
     return;
   }
 
-  if (isPdfFile(file) || isTextPreviewFile(file)) {
-    viewerFrame.onload = loaded;
-    viewerFrame.onerror = () => {
-      viewerLoading.style.display = "none";
-      alert("File tidak dapat dipreview di browser ini.");
-    };
-    viewerFrame.src = directUrl;
+  if (isPdfFile(file)) {
+    viewerFrame.onload = () => { viewerLoading.style.display = "none"; };
+    viewerFrame.onerror = () => { viewerLoading.style.display = "none"; };
+    viewerFrame.src = url;
+    viewerFrame.style.display = "block";
+    return;
+  }
+
+  if (isTextPreviewFile(file)) {
+    viewerFrame.onload = () => { viewerLoading.style.display = "none"; };
+    viewerFrame.src = url;
     viewerFrame.style.display = "block";
     return;
   }
 
   viewerLoading.style.display = "none";
-  alert("Format file ini belum mendukung preview langsung.");
 }
 
 function updateViewerFavorite() {
@@ -1100,8 +1000,7 @@ async function closeViewer() {
 
   viewer.style.display = "none";
   viewer.setAttribute("aria-hidden", "true");
-  viewerImage.src = "";
-  viewerImage.style.display = "none";
+  hideViewerMedia();
   viewerLoading.style.display = "none";
 
   document.body.classList.remove("viewer-open");

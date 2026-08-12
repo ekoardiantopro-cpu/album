@@ -1319,16 +1319,3 @@ body.settings-open {
     min-height: 38px;
   }
 }
-
-/* Search input */
-#searchInput {
-  width: min(240px, 24vw);
-  min-height: 40px;
-  margin: 0;
-  border-radius: 10px;
-}
-@media (max-width: 700px) {
-  #searchInput {
-    width: min(100%, 220px);
-  }
-}
