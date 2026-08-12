@@ -1,5 +1,5 @@
 // =======================
-// FIREBASE IMPORT
+// 🔥 FIREBASE IMPORT
 // =======================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 
@@ -18,7 +18,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // =======================
-// FIREBASE CONFIG
+// 🔥 CONFIG
 // =======================
 const firebaseConfig = {
   apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
@@ -32,12 +32,12 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // =======================
-// GOOGLE DRIVE API
+// 🔑 GOOGLE DRIVE API
 // =======================
 const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
 
 // =======================
-// DOM
+// 🎯 DOM
 // =======================
 const loginBox = document.getElementById("loginBox");
 const appContainer = document.getElementById("app");
@@ -60,12 +60,10 @@ const viewerImage = document.getElementById("viewerImage");
 const viewerLoading = document.getElementById("viewerLoading");
 const viewerFileName = document.getElementById("viewerFileName");
 const viewerCounter = document.getElementById("viewerCounter");
-
 const downloadBtn = document.getElementById("downloadBtn");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 const copyLinkBtn = document.getElementById("copyLinkBtn");
 const slideshowBtn = document.getElementById("slideshowBtn");
-
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const imageContainer = document.getElementById("imageContainer");
@@ -75,6 +73,7 @@ const imageContainer = document.getElementById("imageContainer");
 // =======================
 let historyStack = [];
 let currentFiles = [];
+let currentPhotoFiles = [];
 let currentPhotoIndex = 0;
 let slideshowTimer = null;
 let zoomLevel = 1;
@@ -95,10 +94,6 @@ function isImageFile(file) {
   );
 }
 
-function getImageFiles() {
-  return currentFiles.filter(isImageFile);
-}
-
 function getThumbnailUrl(file, size = 400) {
   return (
     file.thumbnailLink ||
@@ -114,8 +109,12 @@ function getDriveViewUrl(fileId) {
   return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/view`;
 }
 
+function getImageFiles() {
+  return currentPhotoFiles;
+}
+
 // =======================
-// LOGIN
+// 🔐 LOGIN
 // =======================
 document.getElementById("loginBtn").onclick = async () => {
   const email = emailInput.value.trim();
@@ -135,12 +134,12 @@ document.getElementById("loginBtn").onclick = async () => {
 };
 
 // =======================
-// LOGOUT
+// 🚪 LOGOUT
 // =======================
 logoutBtn.onclick = () => signOut(auth);
 
 // =======================
-// AUTH STATE
+// 🔄 AUTH STATE
 // =======================
 onAuthStateChanged(auth, (user) => {
   if (user) {
@@ -156,7 +155,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // =======================
-// FIRESTORE SCHEDULE
+// 🔥 SIMPAN FIRESTORE
 // =======================
 saveBtn.onclick = async () => {
   const phone = phoneInput.value.trim();
@@ -185,26 +184,18 @@ saveBtn.onclick = async () => {
 };
 
 // =======================
-// FOLDER BUTTONS
+// 📂 LOAD FOLDER
 // =======================
-document.querySelectorAll("#folders button").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const folderId = btn.dataset.id;
-
-    if (folderId) {
-      loadFolder(folderId);
-    }
-  });
+document.querySelectorAll("#folders button").forEach(btn => {
+  btn.onclick = () => {
+    searchInput.value = "";
+    loadFolder(btn.dataset.id);
+  };
 });
 
-// =======================
-// LOAD FOLDER
-// =======================
 async function loadFolder(folderId) {
   historyStack.push(folderId);
-
-  backBtn.style.display =
-    historyStack.length > 1 ? "block" : "none";
+  backBtn.style.display = historyStack.length > 1 ? "block" : "none";
 
   try {
     const url =
@@ -219,103 +210,90 @@ async function loadFolder(folderId) {
 
     if (!res.ok || data.error) {
       console.error("Google Drive API error:", data.error || data);
-      alert(
-        "Error load folder: " +
-        (data.error?.message || `HTTP ${res.status}`)
-      );
+      alert("Error load folder: " + (data.error?.message || `HTTP ${res.status}`));
       historyStack.pop();
-      backBtn.style.display =
-        historyStack.length > 1 ? "block" : "none";
+      backBtn.style.display = historyStack.length > 1 ? "block" : "none";
       return;
     }
 
     currentFiles = data.files || [];
     renderFiles(currentFiles);
+
   } catch (err) {
     console.error(err);
     alert("Error load folder!");
     historyStack.pop();
-    backBtn.style.display =
-      historyStack.length > 1 ? "block" : "none";
+    backBtn.style.display = historyStack.length > 1 ? "block" : "none";
   }
 }
 
 // =======================
-// RENDER FILES
+// 🎨 RENDER FILE
 // =======================
 function renderFiles(files) {
   fileGrid.innerHTML = "";
 
   if (!files.length) {
-    fileGrid.innerHTML =
-      '<p class="empty-state">Tidak ada file.</p>';
+    fileGrid.innerHTML = '<div class="file-name">Tidak ada file.</div>';
     return;
   }
 
-  files.forEach((file) => {
+  files.forEach(file => {
     const div = document.createElement("div");
     div.className = "file";
 
     const isFolder =
       file.mimeType === "application/vnd.google-apps.folder";
 
-    let imageUrl;
+    let icon;
 
     if (isFolder) {
-      imageUrl =
-        "https://cdn-icons-png.flaticon.com/512/716/716784.png";
+      icon = "https://cdn-icons-png.flaticon.com/512/716/716784.png";
     } else if (isImageFile(file)) {
-      imageUrl = getThumbnailUrl(file, 400);
+      icon = getThumbnailUrl(file, 400);
     } else {
-      imageUrl =
-        "https://cdn-icons-png.flaticon.com/512/109/109612.png";
+      icon = "https://cdn-icons-png.flaticon.com/512/109/109612.png";
     }
 
     div.innerHTML = `
-      <img
-        src="${imageUrl}"
-        class="file-icon"
-        loading="lazy"
-        alt=""
-      >
+      <img src="${icon}" class="file-icon" loading="lazy" alt="">
       <p class="file-name"></p>
     `;
 
     div.querySelector(".file-name").textContent = file.name;
 
     const img = div.querySelector(".file-icon");
-
     img.addEventListener("error", () => {
-      if (!isFolder) {
-        img.src =
-          "https://cdn-icons-png.flaticon.com/512/109/109612.png";
+      if (isImageFile(file)) {
+        img.src = "https://cdn-icons-png.flaticon.com/512/109/109612.png";
       }
     }, { once: true });
 
-    div.addEventListener("click", () => {
+    div.onclick = () => {
       if (isFolder) {
         loadFolder(file.id);
-        return;
-      }
+      } else if (isImageFile(file)) {
+        // Foto yang tampil di viewer mengikuti isi folder saat ini,
+        // bukan hasil pencarian yang sedang difilter.
+        currentPhotoFiles = currentFiles.filter(isImageFile);
 
-      if (!isImageFile(file)) {
+        const index =
+          currentPhotoFiles.findIndex(item => item.id === file.id);
+
+        if (index >= 0) {
+          openViewer(index);
+        }
+      } else {
         window.open(getDriveViewUrl(file.id), "_blank", "noopener");
-        return;
       }
-
-      const imageFiles = getImageFiles();
-      const index =
-        imageFiles.findIndex((item) => item.id === file.id);
-
-      openViewer(imageFiles, index);
-    });
+    };
 
     fileGrid.appendChild(div);
   });
 }
 
 // =======================
-// BACK
+// 🔙 BACK
 // =======================
 backBtn.onclick = () => {
   if (historyStack.length <= 1) {
@@ -324,15 +302,11 @@ backBtn.onclick = () => {
   }
 
   historyStack.pop();
+  const prev = historyStack[historyStack.length - 1];
 
-  const previousFolder =
-    historyStack[historyStack.length - 1];
-
-  if (previousFolder) {
-    backBtn.style.display =
-      historyStack.length > 1 ? "block" : "none";
-
-    loadFolderWithoutHistory(previousFolder);
+  if (prev) {
+    searchInput.value = "";
+    loadFolderWithoutHistory(prev);
   }
 };
 
@@ -350,39 +324,38 @@ async function loadFolderWithoutHistory(folderId) {
 
     if (!res.ok || data.error) {
       console.error("Google Drive API error:", data.error || data);
-      alert(
-        "Error load folder: " +
-        (data.error?.message || `HTTP ${res.status}`)
-      );
+      alert("Error load folder: " + (data.error?.message || `HTTP ${res.status}`));
       return;
     }
 
     currentFiles = data.files || [];
     renderFiles(currentFiles);
+    backBtn.style.display = historyStack.length > 1 ? "block" : "none";
+
   } catch (err) {
     console.error(err);
     alert("Error load folder!");
   }
-}
+};
 
 // =======================
-// SEARCH
+// 🔍 SEARCH
 // =======================
-searchInput.addEventListener("input", (e) => {
+searchInput.addEventListener("input", e => {
   const keyword = e.target.value.toLowerCase().trim();
 
-  const filtered = currentFiles.filter((file) =>
-    file.name.toLowerCase().includes(keyword)
+  const filtered = currentFiles.filter(f =>
+    f.name.toLowerCase().includes(keyword)
   );
 
   renderFiles(filtered);
 });
 
 // =======================
-// OPEN VIEWER
+// 📸 PHOTO VIEWER
 // =======================
-function openViewer(files, index) {
-  if (!files.length || index < 0) {
+function openViewer(index) {
+  if (!currentPhotoFiles.length || index < 0) {
     return;
   }
 
@@ -394,27 +367,22 @@ function openViewer(files, index) {
   showPhoto(currentPhotoIndex);
 }
 
-// =======================
-// SHOW PHOTO
-// =======================
 function showPhoto(index) {
-  const imageFiles = getImageFiles();
-
-  if (!imageFiles.length) {
+  if (!currentPhotoFiles.length) {
     return;
   }
 
   if (index < 0) {
-    index = imageFiles.length - 1;
+    index = currentPhotoFiles.length - 1;
   }
 
-  if (index >= imageFiles.length) {
+  if (index >= currentPhotoFiles.length) {
     index = 0;
   }
 
   currentPhotoIndex = index;
 
-  const file = imageFiles[index];
+  const file = currentPhotoFiles[index];
 
   viewerLoading.style.display = "block";
   viewerImage.style.display = "none";
@@ -424,13 +392,12 @@ function showPhoto(index) {
 
   viewerFileName.textContent = file.name;
   viewerCounter.textContent =
-    `${index + 1} / ${imageFiles.length}`;
+    `${index + 1} / ${currentPhotoFiles.length}`;
 
-  downloadBtn.href =
-    getOriginalDownloadUrl(file.id);
+  downloadBtn.href = getOriginalDownloadUrl(file.id);
+  downloadBtn.download = file.name;
 
-  // Viewer memakai thumbnail besar supaya tidak menarik
-  // file original berulang kali.
+  // Preview besar untuk viewer; file original hanya dipanggil saat download.
   viewerImage.src = getThumbnailUrl(file, 1600);
 
   viewerImage.onload = () => {
@@ -446,20 +413,15 @@ function showPhoto(index) {
 }
 
 // =======================
-// PREVIOUS / NEXT
+// ← / →
 // =======================
-prevBtn.onclick = () => {
-  showPhoto(currentPhotoIndex - 1);
-};
-
-nextBtn.onclick = () => {
-  showPhoto(currentPhotoIndex + 1);
-};
+prevBtn.onclick = () => showPhoto(currentPhotoIndex - 1);
+nextBtn.onclick = () => showPhoto(currentPhotoIndex + 1);
 
 // =======================
-// KEYBOARD
+// ⌨️ KEYBOARD
 // =======================
-document.addEventListener("keydown", (e) => {
+document.addEventListener("keydown", e => {
   if (viewer.style.display !== "flex") {
     return;
   }
@@ -480,16 +442,14 @@ document.addEventListener("keydown", (e) => {
 });
 
 // =======================
-// CLOSE VIEWER
+// ❌ CLOSE
 // =======================
 function closeViewer() {
   viewer.style.display = "none";
   viewer.setAttribute("aria-hidden", "true");
-
   viewerImage.src = "";
   viewerImage.style.display = "none";
   viewerLoading.style.display = "none";
-
   document.body.style.overflow = "";
 
   stopSlideshow();
@@ -501,25 +461,25 @@ function closeViewer() {
 document.getElementById("closeViewer").onclick = closeViewer;
 
 // =======================
-// DOWNLOAD
+// ⛶ FULLSCREEN
 // =======================
-downloadBtn.addEventListener("click", () => {
-  const imageFiles = getImageFiles();
-  const file = imageFiles[currentPhotoIndex];
-
-  if (!file) {
-    return;
+fullscreenBtn.onclick = async () => {
+  try {
+    if (!document.fullscreenElement) {
+      await viewer.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  } catch (err) {
+    console.error("Fullscreen error:", err);
   }
-
-  downloadBtn.href = getOriginalDownloadUrl(file.id);
-});
+};
 
 // =======================
-// COPY LINK
+// 🔗 COPY LINK
 // =======================
 copyLinkBtn.onclick = async () => {
-  const imageFiles = getImageFiles();
-  const file = imageFiles[currentPhotoIndex];
+  const file = currentPhotoFiles[currentPhotoIndex];
 
   if (!file) {
     return;
@@ -535,6 +495,7 @@ copyLinkBtn.onclick = async () => {
     setTimeout(() => {
       copyLinkBtn.textContent = "🔗";
     }, 1200);
+
   } catch (err) {
     console.error(err);
     alert("Tidak bisa menyalin link.");
@@ -542,29 +503,11 @@ copyLinkBtn.onclick = async () => {
 };
 
 // =======================
-// FULLSCREEN
-// =======================
-fullscreenBtn.onclick = async () => {
-  try {
-    if (!document.fullscreenElement) {
-      await viewer.requestFullscreen();
-    } else {
-      await document.exitFullscreen();
-    }
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-// =======================
-// ZOOM
+// 🔍 ZOOM
 // =======================
 function applyZoom() {
-  viewerImage.style.transform =
-    `scale(${zoomLevel})`;
-
-  viewerImage.style.cursor =
-    zoomLevel > 1 ? "grab" : "zoom-in";
+  viewerImage.style.transform = `scale(${zoomLevel})`;
+  viewerImage.style.cursor = zoomLevel > 1 ? "grab" : "zoom-in";
 }
 
 viewerImage.addEventListener("dblclick", () => {
@@ -572,25 +515,21 @@ viewerImage.addEventListener("dblclick", () => {
   applyZoom();
 });
 
-imageContainer.addEventListener(
-  "wheel",
-  (e) => {
-    if (viewer.style.display !== "flex") {
-      return;
-    }
+imageContainer.addEventListener("wheel", e => {
+  if (viewer.style.display !== "flex") {
+    return;
+  }
 
-    e.preventDefault();
+  e.preventDefault();
 
-    zoomLevel += e.deltaY < 0 ? 0.2 : -0.2;
-    zoomLevel = Math.max(1, Math.min(4, zoomLevel));
+  zoomLevel += e.deltaY < 0 ? 0.2 : -0.2;
+  zoomLevel = Math.max(1, Math.min(4, zoomLevel));
 
-    applyZoom();
-  },
-  { passive: false }
-);
+  applyZoom();
+}, { passive: false });
 
 // =======================
-// SLIDESHOW
+// ▶ SLIDESHOW
 // =======================
 function stopSlideshow() {
   if (slideshowTimer) {
@@ -615,53 +554,47 @@ slideshowBtn.onclick = () => {
 };
 
 // =======================
-// TOUCH / SWIPE
+// 📱 SWIPE
 // =======================
-imageContainer.addEventListener(
-  "touchstart",
-  (e) => {
-    if (e.touches.length !== 1) {
-      return;
-    }
+imageContainer.addEventListener("touchstart", e => {
+  if (e.touches.length !== 1) {
+    return;
+  }
 
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  },
-  { passive: true }
-);
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
 
-imageContainer.addEventListener(
-  "touchend",
-  (e) => {
-    if (!touchStartX || !touchStartY) {
-      return;
-    }
+imageContainer.addEventListener("touchend", e => {
+  if (!touchStartX || !touchStartY) {
+    return;
+  }
 
-    const endX = e.changedTouches[0].clientX;
-    const endY = e.changedTouches[0].clientY;
+  const endX = e.changedTouches[0].clientX;
+  const endY = e.changedTouches[0].clientY;
 
-    const diffX = endX - touchStartX;
-    const diffY = endY - touchStartY;
+  const diffX = endX - touchStartX;
+  const diffY = endY - touchStartY;
 
-    touchStartX = 0;
-    touchStartY = 0;
+  touchStartX = 0;
+  touchStartY = 0;
 
-    // Swipe hanya jika gerakan horizontal cukup jelas.
-    if (Math.abs(diffX) < 60 || Math.abs(diffX) < Math.abs(diffY)) {
-      return;
-    }
+  if (
+    Math.abs(diffX) < 60 ||
+    Math.abs(diffX) < Math.abs(diffY)
+  ) {
+    return;
+  }
 
-    if (diffX < 0) {
-      showPhoto(currentPhotoIndex + 1);
-    } else {
-      showPhoto(currentPhotoIndex - 1);
-    }
-  },
-  { passive: true }
-);
+  if (diffX < 0) {
+    showPhoto(currentPhotoIndex + 1);
+  } else {
+    showPhoto(currentPhotoIndex - 1);
+  }
+}, { passive: true });
 
 // =======================
-// AUTO WHATSAPP
+// ⏰ AUTO WHATSAPP
 // =======================
 setInterval(async () => {
   const now = new Date();
@@ -671,7 +604,7 @@ setInterval(async () => {
     const snapshot =
       await getDocs(collection(db, "scheduled_messages"));
 
-    snapshot.forEach((doc) => {
+    snapshot.forEach(doc => {
       const data = doc.data();
       const id = doc.id;
 
@@ -682,13 +615,11 @@ setInterval(async () => {
       ) {
         console.log("Kirim WA ke:", data.phone);
 
-        const phone =
-          String(data.phone).replace("+", "");
-
         const url =
-          `https://wa.me/${phone}?text=${encodeURIComponent(data.prompt)}`;
+          `https://wa.me/${String(data.phone).replace("+", "")}` +
+          `?text=${encodeURIComponent(data.prompt)}`;
 
-        window.open(url, "_blank", "noopener");
+        window.open(url, "_blank");
 
         sentCache[id] = true;
       }

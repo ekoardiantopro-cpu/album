@@ -3,84 +3,88 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Album</title>
+  <title>EKO Drive Manager</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- LOGIN -->
-  <section id="loginBox" class="login-box">
-    <h1>Album</h1>
-    <input id="email" type="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-    <button id="loginBtn">Login</button>
-  </section>
+<header>
+  <h2>📁 EKO Drive Manager</h2>
+  <button id="logoutBtn" style="display:none;">Logout</button>
+</header>
 
-  <!-- APP -->
-  <main id="app" style="display:none;">
-    <header class="topbar">
-      <div class="topbar-left">
-        <h1>Album</h1>
-        <button id="backBtn" class="secondary-btn" style="display:none;">← Kembali</button>
-      </div>
-      <button id="logoutBtn" class="secondary-btn" style="display:none;">Logout</button>
-    </header>
+<!-- LOGIN -->
+<div id="loginBox">
+  <h3>Login</h3>
+  <input type="email" id="email" placeholder="Email"><br><br>
+  <input type="password" id="password" placeholder="Password"><br><br>
+  <button id="loginBtn">Login</button>
+</div>
 
-    <section class="controls">
-      <input id="searchInput" type="search" placeholder="Cari file...">
-    </section>
+<!-- APP -->
+<div id="app" style="display:none;">
 
-    <section id="folders" class="folder-buttons">
-      <!--
-        Folder buttons yang sudah Anda miliki sebelumnya tetap bisa
-        ditempatkan di sini. Contoh:
-        <button data-id="FOLDER_ID">Nama Folder</button>
-      -->
-    </section>
+  <!-- FOLDER -->
+  <div id="folders">
+    <button data-id="1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT">EKO PRO</button>
+    <button data-id="18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg">EKO 36</button>
+    <button data-id="1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW">EKO 03</button>
+    <button data-id="1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv">CV PROF</button>
+  </div>
 
-    <section id="fileGrid" class="file-grid"></section>
+  <hr>
 
-    <!-- OPTIONAL: JADWAL WHATSAPP -->
-    <section class="schedule-box">
-      <h2>Jadwal WhatsApp</h2>
-      <input id="phone" type="text" placeholder="Nomor WhatsApp">
-      <textarea id="prompt" placeholder="Pesan"></textarea>
-      <input id="time" type="time">
-      <button id="saveBtn">Simpan Jadwal</button>
-    </section>
-  </main>
+  <!-- 🔥 JADWAL WHATSAPP -->
+  <h3>📲 Jadwal WhatsApp</h3>
 
-  <!-- PHOTO VIEWER -->
-  <div id="viewer" style="display:none;" aria-hidden="true">
+  <input id="phone" placeholder="+628xxxx"><br><br>
+  <input id="prompt" placeholder="Isi pesan"><br><br>
+  <input id="time" type="time"><br><br>
 
-    <div class="viewer-toolbar">
-      <button id="closeViewer" class="viewer-btn" title="Tutup" aria-label="Tutup">✕</button>
+  <button id="saveBtn">Simpan Jadwal</button>
 
-      <div class="viewer-actions">
-        <button id="fullscreenBtn" class="viewer-btn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
-        <button id="copyLinkBtn" class="viewer-btn" title="Salin link" aria-label="Salin link">🔗</button>
-        <a id="downloadBtn" class="viewer-btn" href="#" target="_blank" rel="noopener" title="Download original" aria-label="Download original">⬇</a>
-        <button id="slideshowBtn" class="viewer-btn" title="Slideshow" aria-label="Slideshow">▶</button>
-      </div>
-    </div>
+  <hr>
 
-    <div class="viewer-content">
-      <button id="prevBtn" class="viewer-nav viewer-prev" title="Foto sebelumnya" aria-label="Foto sebelumnya">‹</button>
+  <!-- SEARCH -->
+  <input type="text" id="searchInput" placeholder="🔍 Cari file...">
 
-      <div id="imageContainer">
-        <div id="viewerLoading" aria-live="polite">⏳</div>
-        <img id="viewerImage" src="" alt="Preview foto" draggable="false">
-      </div>
+  <button id="backBtn" style="display:none;">⬅️ Kembali</button>
 
-      <button id="nextBtn" class="viewer-nav viewer-next" title="Foto berikutnya" aria-label="Foto berikutnya">›</button>
-    </div>
+  <div id="fileGrid"></div>
+</div>
 
-    <div class="viewer-info">
-      <div id="viewerFileName"></div>
-      <div id="viewerCounter">0 / 0</div>
+<!-- VIEWER -->
+<div id="viewer" style="display:none;" aria-hidden="true">
+
+  <div class="viewer-toolbar">
+    <button id="closeViewer" class="viewer-btn" title="Tutup" aria-label="Tutup">✕</button>
+
+    <div class="viewer-actions">
+      <button id="fullscreenBtn" class="viewer-btn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+      <button id="copyLinkBtn" class="viewer-btn" title="Salin link" aria-label="Salin link">🔗</button>
+      <a id="downloadBtn" class="viewer-btn" href="#" target="_blank" rel="noopener" title="Download original" aria-label="Download original">⬇</a>
+      <button id="slideshowBtn" class="viewer-btn" title="Slideshow" aria-label="Slideshow">▶</button>
     </div>
   </div>
 
-  <script type="module" src="app.js"></script>
+  <div class="viewer-content">
+    <button id="prevBtn" class="viewer-nav viewer-prev" title="Foto sebelumnya" aria-label="Foto sebelumnya">‹</button>
+
+    <div id="imageContainer">
+      <div id="viewerLoading" aria-live="polite">⏳</div>
+      <img id="viewerImage" src="" alt="Preview foto" draggable="false">
+    </div>
+
+    <button id="nextBtn" class="viewer-nav viewer-next" title="Foto berikutnya" aria-label="Foto berikutnya">›</button>
+  </div>
+
+  <div class="viewer-info">
+    <div id="viewerFileName"></div>
+    <div id="viewerCounter">0 / 0</div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+
 </body>
 </html>
