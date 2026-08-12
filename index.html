@@ -16,8 +16,8 @@
 <!-- LOGIN -->
 <div id="loginBox">
   <h3>Login</h3>
-  <input type="email" id="email" placeholder="Email"><br><br>
-  <input type="password" id="password" placeholder="Password"><br><br>
+  <input type="email" id="email" placeholder="Email" autocomplete="off"><br><br>
+  <input type="password" id="password" placeholder="Password" autocomplete="new-password"><br><br>
   <button id="loginBtn">Login</button>
 </div>
 
@@ -27,18 +27,15 @@
   <div class="app-topbar">
     <div class="app-title">Album Keluarga</div>
     <div class="app-top-actions">
-      <button id="homeBtn" class="header-icon" title="Menu awal" aria-label="Menu awal">⌂</button>
-      <button id="settingsBtn" class="header-icon" title="Pengaturan tampilan" aria-label="Pengaturan tampilan">⚙️</button>
+      <button id="homeBtn" class="header-icon" title="Home" aria-label="Home">⌂</button>
+      <button id="recentBtn" class="header-icon" title="Recent" aria-label="Recent">◷</button>
+      <button id="searchBtn" class="header-icon" title="Search" aria-label="Search">⌕</button>
+      <button id="settingsBtn" class="header-icon" title="Settings" aria-label="Settings">⚙️</button>
     </div>
   </div>
 
   <!-- FOLDER -->
-  <div id="folders">
-    <button data-id="1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT">EKO PRO</button>
-    <button data-id="18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg">EKO 36</button>
-    <button data-id="1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW">EKO 03</button>
-    <button data-id="1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv">CV PROF</button>
-  </div>
+  <div id="folders"></div>
 
   <hr>
 
@@ -51,7 +48,7 @@
 
   <!-- SEARCH + SORT -->
   <div class="library-toolbar">
-    <input type="search" id="searchInput" placeholder="🔍 Cari nama, tanggal...">
+    <div id="homeStatus" class="home-status">Dashboard</div>
 
     <div class="library-actions">
       <select id="sortSelect" title="Urutkan">
@@ -75,6 +72,24 @@
   </div>
 
   <div id="fileGrid"></div>
+</div>
+
+<!-- SEARCH -->
+<div id="searchPanel" class="settings-overlay" style="display:none;" aria-hidden="true">
+  <div class="settings-card search-card" role="dialog" aria-modal="true" aria-labelledby="searchTitle">
+    <div class="settings-header">
+      <div>
+        <h3 id="searchTitle">⌕ Cari seluruh album</h3>
+        <p>Pencarian dimulai dari semua drive dan seluruh subfolder.</p>
+      </div>
+      <button id="closeSearchBtn" class="settings-close" title="Tutup" aria-label="Tutup">✕</button>
+    </div>
+    <div class="settings-section">
+      <input id="globalSearchInput" class="settings-text-input" type="search" placeholder="Cari nama file, tanggal..." autocomplete="off">
+      <button id="globalSearchRunBtn" class="secondary-btn">⌕ Mulai pencarian</button>
+      <div id="globalSearchStatus" class="settings-note"></div>
+    </div>
+  </div>
 </div>
 
 <!-- SETTINGS -->
@@ -122,6 +137,23 @@
         <button class="accent-option" data-accent="#f59e0b" style="--accent-color:#f59e0b" title="Oranye" aria-label="Oranye"></button>
         <button class="accent-option" data-accent="#ec4899" style="--accent-color:#ec4899" title="Pink" aria-label="Pink"></button>
       </div>
+    </div>
+
+    <div class="settings-section">
+      <h4>Judul website</h4>
+      <input id="siteTitleInput" class="settings-text-input" type="text" maxlength="80" placeholder="Maheva Family">
+      <button id="saveSiteTitleBtn" class="secondary-btn">Simpan judul</button>
+    </div>
+
+    <div class="settings-section">
+      <h4>Google Drive</h4>
+      <p class="settings-note">Tambahkan drive dengan nama dan Folder ID Google Drive. Drive bawaan tetap dipertahankan.</p>
+      <div id="driveSettingsList" class="drive-settings-list"></div>
+      <div class="drive-form-grid">
+        <input id="driveNameInput" class="settings-text-input" type="text" maxlength="60" placeholder="Nama drive, contoh: Foto Keluarga">
+        <input id="driveFolderIdInput" class="settings-text-input" type="text" maxlength="120" placeholder="Folder ID Google Drive">
+      </div>
+      <button id="addDriveBtn" class="secondary-btn">＋ Tambahkan drive</button>
     </div>
 
     <div class="settings-section">

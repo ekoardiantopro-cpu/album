@@ -936,3 +936,110 @@ body.settings-open {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================
+   HOME / RECENT / GLOBAL SEARCH / DRIVE SETTINGS
+========================= */
+.home-status {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  color: var(--muted, #94a3b8);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#folders {
+  min-height: 54px;
+}
+
+#folders button {
+  min-height: 40px;
+}
+
+.recent-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px 0;
+  color: var(--text);
+}
+
+.recent-card .file-icon {
+  object-fit: cover;
+}
+
+.search-card {
+  width: min(620px, 100%);
+}
+
+.search-card .secondary-btn {
+  width: 100%;
+}
+
+.drive-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.drive-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.drive-setting-row > div {
+  min-width: 0;
+}
+
+.drive-setting-row strong,
+.drive-setting-row small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drive-setting-row small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.drive-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+}
+
+.drive-form-grid input {
+  width: 100%;
+}
+
+#addDriveBtn,
+#saveSiteTitleBtn {
+  width: 100%;
+}
+
+#saveSiteTitleBtn {
+  margin-top: 8px;
+}
+
+@media (max-width: 700px) {
+  .drive-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-status {
+    min-height: 38px;
+  }
+}

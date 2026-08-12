@@ -35,7 +35,6 @@ const logoutBtn = document.getElementById("logoutBtn");
 const fileGrid = document.getElementById("fileGrid");
 const viewer = document.getElementById("viewer");
 const backBtn = document.getElementById("backBtn");
-const searchInput = document.getElementById("searchInput");
 const sortSelect = document.getElementById("sortSelect");
 const favoritesBtn = document.getElementById("favoritesBtn");
 const selectModeBtn = document.getElementById("selectModeBtn");
@@ -44,6 +43,10 @@ const selectionBar = document.getElementById("selectionBar");
 const selectedCount = document.getElementById("selectedCount");
 const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const homeBtn = document.getElementById("homeBtn");
+const recentBtn = document.getElementById("recentBtn");
+const searchBtn = document.getElementById("searchBtn");
+const homeStatus = document.getElementById("homeStatus");
+const foldersEl = document.getElementById("folders");
 const runningTextTrack = document.getElementById("runningTextTrack");
 const runningTextInput = document.getElementById("runningTextInput");
 const runningAnimationSelect = document.getElementById("runningAnimationSelect");
@@ -66,6 +69,12 @@ const slideshowBtn = document.getElementById("slideshowBtn");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const imageContainer = document.getElementById("imageContainer");
+
+const searchPanel = document.getElementById("searchPanel");
+const closeSearchBtn = document.getElementById("closeSearchBtn");
+const globalSearchInput = document.getElementById("globalSearchInput");
+const globalSearchRunBtn = document.getElementById("globalSearchRunBtn");
+const globalSearchStatus = document.getElementById("globalSearchStatus");
 
 // =======================
 // STATE
@@ -100,9 +109,22 @@ let dragStartY = 0;
 let dragOriginX = 0;
 let dragOriginY = 0;
 let dragging = false;
+let recentMode = false;
+let globalSearchMode = false;
+let searchBusy = false;
+let localSearchTerm = "";
 
 // Preview besar, tetapi original hanya dimuat saat zoom tinggi / download.
 const PREVIEW_SIZE = 2400;
+const DEFAULT_DRIVES = [
+  { name: "EKO PRO", folderId: "1AoSKM8CXzb1F5gDYP5a0G0SzZTE2JQDT", builtIn: true },
+  { name: "EKO 36", folderId: "18ASYGXvMTqU2uw57xHF5JZZbLTSvKQTg", builtIn: true },
+  { name: "EKO 03", folderId: "1zXsXINns1ivJOoAnCggsfAjrnSYpUJGW", builtIn: true },
+  { name: "CV PROF", folderId: "1K0SOBV82Lot5pPGTh5iRWBclcR0LMbqv", builtIn: true }
+];
+const DRIVES_KEY = "maheva_drives";
+const RECENT_KEY = "maheva_recent";
+const SITE_TITLE_KEY = "maheva_site_title";
 const ORIGINAL_ZOOM_THRESHOLD = 1.8;
 
 // =======================
@@ -256,7 +278,7 @@ function sortFiles(files) {
 }
 
 function getFilteredFiles() {
-  const keyword = searchInput.value.toLowerCase().trim();
+  const keyword = localSearchTerm.toLowerCase().trim();
 
   let files = currentFiles.filter(file =>
     matchesSearch(file, keyword)
@@ -318,6 +340,207 @@ function showHint() {
 }
 
 // =======================
+// DRIVES / HOME / RECENT
+// =======================
+function getDrives() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DRIVES_KEY) || "null");
+    if (Array.isArray(saved) && saved.length) {
+      return saved.filter(d => d && d.name && d.folderId);
+    }
+  } catch {}
+  return DEFAULT_DRIVES.map(d => ({ ...d }));
+}
+
+function saveDrives(drives) {
+  safeStorageSet(DRIVES_KEY, JSON.stringify(drives));
+}
+
+function renderDriveButtons() {
+  const drives = getDrives();
+  foldersEl.innerHTML = "";
+  drives.forEach((drive, index) => {
+    const btn = document.createElement("button");
+    btn.dataset.id = drive.folderId;
+    btn.dataset.driveName = drive.name;
+    btn.textContent = drive.name;
+    btn.onclick = () => {
+      localSearchTerm = "";
+      showFavoritesOnly = false;
+      favoritesBtn.classList.remove("active");
+      recentMode = false;
+      globalSearchMode = false;
+      loadFolder(drive.folderId, drive.name);
+    };
+    foldersEl.appendChild(btn);
+  });
+}
+
+function getDriveByFolderId(folderId) {
+  return getDrives().find(d => d.folderId === folderId) || null;
+}
+
+function getRecent() {
+  try {
+    const data = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecent(item) {
+  const record = {
+    ...item,
+    timestamp: Date.now()
+  };
+  const next = [record, ...getRecent().filter(x => x.id !== record.id || x.type !== record.type)];
+  safeStorageSet(RECENT_KEY, JSON.stringify(next.slice(0, 40)));
+}
+
+function clearRecent() {
+  safeStorageSet(RECENT_KEY, "[]");
+  renderRecent();
+}
+
+function renderRecent() {
+  recentMode = true;
+  globalSearchMode = false;
+  stopSlideshow();
+  currentFiles = [];
+  visibleFiles = [];
+  fileGrid.innerHTML = "";
+  backBtn.style.display = "none";
+  homeStatus.textContent = "Recent";
+
+  const recent = getRecent();
+  if (!recent.length) {
+    fileGrid.innerHTML = '<div class="empty-state">Belum ada aktivitas terbaru.</div>';
+    return;
+  }
+
+  const header = document.createElement("div");
+  header.className = "recent-header";
+  header.innerHTML = `<strong>Terakhir dibuka</strong><button id="clearRecentBtn" class="small-action">Hapus riwayat</button>`;
+  fileGrid.appendChild(header);
+  header.querySelector("button").onclick = clearRecent;
+
+  recent.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "file recent-card";
+    const image = item.type === "file" && isImageFile(item);
+    div.innerHTML = `
+      <img class="file-icon" src="${image ? getThumbnailUrl(item, 600) : "https://cdn-icons-png.flaticon.com/512/716/716784.png"}" loading="lazy" alt="">
+      <p class="file-name"></p>
+      <div class="file-meta">${item.driveName || ""}${item.path ? " • " + item.path : ""}<br>${new Date(item.timestamp).toLocaleString("id-ID")}</div>
+    `;
+    div.querySelector(".file-name").textContent = item.name;
+    div.onclick = () => {
+      if (item.type === "folder") {
+        loadFolder(item.id, item.driveName || "Drive");
+      } else {
+        currentPhotoFiles = recent.filter(x => x.type === "file" && isImageFile(x));
+        const index = currentPhotoFiles.findIndex(x => x.id === item.id);
+        if (index >= 0) openViewer(index);
+      }
+    };
+    fileGrid.appendChild(div);
+  });
+}
+
+function goHome() {
+  stopSlideshow();
+  if (viewer.style.display === "flex") closeViewer();
+  historyStack = [];
+  currentFiles = [];
+  visibleFiles = [];
+  currentPhotoFiles = [];
+  currentPhotoIndex = -1;
+  localSearchTerm = "";
+  showFavoritesOnly = false;
+  favoritesBtn.classList.remove("active");
+  favoritesBtn.textContent = "♡";
+  selectionMode = false;
+  selectedFileIds.clear();
+  recentMode = false;
+  globalSearchMode = false;
+  updateSelectionUI();
+  backBtn.style.display = "none";
+  fileGrid.innerHTML = "";
+  homeStatus.textContent = "Dashboard";
+  renderDriveButtons();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function fetchAllChildren(folderId) {
+  const files = [];
+  let pageToken = "";
+  do {
+    const tokenPart = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "";
+    const url = `https://www.googleapis.com/drive/v3/files?q='${encodeURIComponent(folderId)}'+in+parents+and+trashed=false&fields=nextPageToken,files(id,name,mimeType,thumbnailLink,modifiedTime,createdTime,size,webContentLink)&orderBy=folder,name&pageSize=1000&key=${API_KEY}${tokenPart}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error?.message || `HTTP ${res.status}`);
+    files.push(...(data.files || []));
+    pageToken = data.nextPageToken || "";
+  } while (pageToken);
+  return files;
+}
+
+async function searchAllDrives(keyword) {
+  const query = keyword.trim().toLowerCase();
+  const results = [];
+  const seenFolders = new Set();
+  const drives = getDrives();
+
+  async function walk(folderId, driveName, path) {
+    if (seenFolders.has(folderId)) return;
+    seenFolders.add(folderId);
+    const files = await fetchAllChildren(folderId);
+    for (const file of files) {
+      const item = { ...file, _driveName: driveName, _path: path };
+      if (matchesSearch(item, query)) results.push(item);
+      if (file.mimeType === "application/vnd.google-apps.folder") {
+        await walk(file.id, driveName, path ? `${path}/${file.name}` : file.name);
+      }
+    }
+  }
+
+  for (const drive of drives) {
+    await walk(drive.folderId, drive.name, drive.name);
+  }
+  return results;
+}
+
+async function runGlobalSearch() {
+  const keyword = globalSearchInput.value.trim();
+  if (!keyword || searchBusy) return;
+  searchBusy = true;
+  globalSearchStatus.textContent = "Sedang mengindex semua direktori...";
+  globalSearchRunBtn.disabled = true;
+  try {
+    const results = await searchAllDrives(keyword);
+    currentFiles = results;
+    visibleFiles = sortFiles(results);
+    recentMode = false;
+    globalSearchMode = true;
+    historyStack = [];
+    backBtn.style.display = "none";
+    homeStatus.textContent = `Hasil pencarian: ${results.length}`;
+    renderFiles(visibleFiles);
+    closeSearch();
+  } catch (err) {
+    console.error(err);
+    globalSearchStatus.textContent = `Pencarian gagal: ${err.message}`;
+  } finally {
+    searchBusy = false;
+    globalSearchRunBtn.disabled = false;
+  }
+}
+
+renderDriveButtons();
+
+// =======================
 // LOGIN
 // =======================
 document.getElementById("loginBtn").onclick = async () => {
@@ -337,7 +560,16 @@ document.getElementById("loginBtn").onclick = async () => {
   }
 };
 
-logoutBtn.onclick = () => signOut(auth);
+logoutBtn.onclick = async () => {
+  try {
+    await signOut(auth);
+  } finally {
+    emailInput.value = "";
+    passwordInput.value = "";
+    globalSearchInput.value = "";
+    globalSearchStatus.textContent = "";
+  }
+};
 
 onAuthStateChanged(auth, user => {
   if (user) {
@@ -345,13 +577,25 @@ onAuthStateChanged(auth, user => {
     appContainer.style.display = "block";
     logoutBtn.style.display = "block";
     settingsBtn.style.display = "inline-flex";
+    homeBtn.style.display = "inline-flex";
+    recentBtn.style.display = "inline-flex";
+    searchBtn.style.display = "inline-flex";
+    emailInput.value = "";
+    passwordInput.value = "";
+    goHome();
   } else {
     loginBox.style.display = "block";
     appContainer.style.display = "none";
     logoutBtn.style.display = "none";
     settingsBtn.style.display = "none";
+    homeBtn.style.display = "none";
+    recentBtn.style.display = "none";
+    searchBtn.style.display = "none";
     closeSettings();
+    closeSearch();
     closeViewer();
+    emailInput.value = "";
+    passwordInput.value = "";
   }
 });
 
@@ -359,71 +603,27 @@ onAuthStateChanged(auth, user => {
 // =======================
 // FOLDER
 // =======================
-document.querySelectorAll("#folders button").forEach(btn => {
-  btn.onclick = () => {
-    searchInput.value = "";
-    showFavoritesOnly = false;
-    favoritesBtn.classList.remove("active");
-    loadFolder(btn.dataset.id);
-  };
-});
-
-function goHome() {
-  stopSlideshow();
-  historyStack = [];
-  currentFiles = [];
-  visibleFiles = [];
-  currentPhotoIndex = -1;
-  searchInput.value = "";
-  showFavoritesOnly = false;
-  favoritesBtn.classList.remove("active");
-  selectionMode = false;
-  selectedIds.clear();
-  selectModeBtn.classList.remove("active");
-  updateSelectionUI();
-  backBtn.style.display = "none";
-  fileGrid.innerHTML = "";
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-homeBtn.onclick = goHome;
-
-async function fetchFolder(folderId) {
-  const url =
-    `https://www.googleapis.com/drive/v3/files` +
-    `?q='${encodeURIComponent(folderId)}'+in+parents+and+trashed=false` +
-    `&fields=files(id,name,mimeType,thumbnailLink,modifiedTime,createdTime,size,webContentLink)` +
-    `&orderBy=folder,name` +
-    `&pageSize=1000` +
-    `&key=${API_KEY}`;
-
-  const res = await fetch(url);
-  const data = await res.json();
-
-  if (!res.ok || data.error) {
-    throw new Error(
-      data.error?.message || `HTTP ${res.status}`
-    );
-  }
-
-  return data.files || [];
-}
-
-async function loadFolder(folderId) {
+async function loadFolder(folderId, driveName = "") {
   historyStack.push(folderId);
-  backBtn.style.display =
-    historyStack.length > 1 ? "block" : "none";
-
+  recentMode = false;
+  globalSearchMode = false;
+  backBtn.style.display = historyStack.length > 1 ? "block" : "none";
+  const drive = getDriveByFolderId(folderId);
+  homeStatus.textContent = driveName || drive?.name || "Folder";
   try {
     currentFiles = await fetchFolder(folderId);
     renderCurrentView();
+    saveRecent({ type: "folder", id: folderId, name: driveName || drive?.name || "Folder", driveName: driveName || drive?.name || "Drive", path: driveName || "" });
   } catch (err) {
     console.error(err);
     alert("Error load folder: " + err.message);
     historyStack.pop();
-    backBtn.style.display =
-      historyStack.length > 1 ? "block" : "none";
+    backBtn.style.display = historyStack.length > 1 ? "block" : "none";
   }
+}
+
+async function fetchFolder(folderId) {
+  return fetchAllChildren(folderId);
 }
 
 backBtn.onclick = async () => {
@@ -436,11 +636,13 @@ backBtn.onclick = async () => {
   const previousFolder =
     historyStack[historyStack.length - 1];
 
-  searchInput.value = "";
+  localSearchTerm = "";
 
   if (previousFolder) {
     try {
       currentFiles = await fetchFolder(previousFolder);
+      const drive = getDriveByFolderId(previousFolder);
+      homeStatus.textContent = drive?.name || "Folder";
       renderCurrentView();
     } catch (err) {
       console.error(err);
@@ -542,7 +744,8 @@ function renderFiles(files) {
       }
 
       if (isFolder) {
-        loadFolder(file.id);
+        saveRecent({ type: "folder", id: file.id, name: file.name, driveName: file._driveName || homeStatus.textContent, path: file._path || file.name });
+        loadFolder(file.id, file._driveName || homeStatus.textContent);
         return;
       }
 
@@ -556,6 +759,7 @@ function renderFiles(files) {
 
       if (index >= 0) {
         currentPhotoFiles = imageFiles;
+        saveRecent({ type: "file", ...file, driveName: file._driveName || homeStatus.textContent, path: file._path || "" });
         openViewer(index);
       }
     };
@@ -567,7 +771,8 @@ function renderFiles(files) {
 // =======================
 // SEARCH / SORT / FILTER
 // =======================
-searchInput.addEventListener("input", renderCurrentView);
+// Local folder search is now opened with the global Search icon.
+
 
 sortSelect.addEventListener("change", renderCurrentView);
 
@@ -593,6 +798,35 @@ selectModeBtn.onclick = () => {
 };
 
 clearSelectionBtn.onclick = clearSelection;
+
+// =======================
+// HOME / RECENT / GLOBAL SEARCH UI
+// =======================
+recentBtn.onclick = renderRecent;
+searchBtn.onclick = () => {
+  globalSearchInput.value = "";
+  globalSearchStatus.textContent = "";
+  searchPanel.style.display = "flex";
+  searchPanel.setAttribute("aria-hidden", "false");
+  document.body.classList.add("settings-open");
+  setTimeout(() => globalSearchInput.focus(), 50);
+};
+
+function closeSearch() {
+  searchPanel.style.display = "none";
+  searchPanel.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("settings-open");
+}
+
+closeSearchBtn.onclick = closeSearch;
+globalSearchRunBtn.onclick = runGlobalSearch;
+globalSearchInput.addEventListener("keydown", event => {
+  if (event.key === "Enter") runGlobalSearch();
+  if (event.key === "Escape") closeSearch();
+});
+searchPanel.addEventListener("click", event => {
+  if (event.target === searchPanel) closeSearch();
+});
 
 // =======================
 // VIEWER
@@ -652,6 +886,7 @@ function showPhoto(index) {
   currentPhotoIndex = index;
 
   const file = currentPhotoFiles[index];
+  saveRecent({ type: "file", ...file, driveName: file._driveName || homeStatus.textContent, path: file._path || "" });
 
   viewerLoading.style.display = "block";
   viewerImage.style.display = "none";
@@ -1159,6 +1394,12 @@ downloadSelectedBtn.onclick = downloadSelectedAsZip;
 // FAMILY THEME / SETTINGS
 // =======================
 const settingsBtn = document.getElementById("settingsBtn");
+const siteTitleInput = document.getElementById("siteTitleInput");
+const saveSiteTitleBtn = document.getElementById("saveSiteTitleBtn");
+const driveSettingsList = document.getElementById("driveSettingsList");
+const driveNameInput = document.getElementById("driveNameInput");
+const driveFolderIdInput = document.getElementById("driveFolderIdInput");
+const addDriveBtn = document.getElementById("addDriveBtn");
 const settingsPanel = document.getElementById("settingsPanel");
 const closeSettingsBtn = document.getElementById("closeSettingsBtn");
 const backgroundUpload = document.getElementById("backgroundUpload");
@@ -1177,6 +1418,67 @@ const RUNNING_FONT_KEY = "maheva_running_font";
 
 const runningAnimations = ["marquee-left", "marquee-right", "bounce", "fade", "pulse", "typewriter"];
 const runningFonts = ["system", "rounded", "serif", "mono", "cursive"];
+
+function applySiteTitle(value) {
+  const title = String(value || "").trim() || "Maheva Family";
+  document.title = title;
+  document.querySelector("header h2").textContent = `🏠 ${title}`;
+  document.querySelector(".app-title").textContent = "Album Keluarga";
+  siteTitleInput.value = title;
+  safeStorageSet(SITE_TITLE_KEY, title);
+}
+
+function restoreSiteTitle() {
+  applySiteTitle(safeStorageGet(SITE_TITLE_KEY, "Maheva Family"));
+}
+
+function renderDriveSettings() {
+  driveSettingsList.innerHTML = "";
+  getDrives().forEach((drive, index) => {
+    const row = document.createElement("div");
+    row.className = "drive-setting-row";
+    row.innerHTML = `<div><strong></strong><small></small></div><button class="small-action" ${drive.builtIn ? "disabled title=\"Drive bawaan\"" : "title=\"Hapus drive\""}>${drive.builtIn ? "Bawaan" : "Hapus"}</button>`;
+    row.querySelector("strong").textContent = drive.name;
+    row.querySelector("small").textContent = drive.folderId;
+    if (!drive.builtIn) {
+      row.querySelector("button").onclick = () => {
+        const drives = getDrives().filter((_, i) => i !== index);
+        saveDrives(drives);
+        renderDriveButtons();
+        renderDriveSettings();
+        goHome();
+      };
+    }
+    driveSettingsList.appendChild(row);
+  });
+}
+
+addDriveBtn.onclick = () => {
+  const name = driveNameInput.value.trim();
+  const folderId = driveFolderIdInput.value.trim();
+  if (!name || !folderId) {
+    alert("Nama drive dan Folder ID wajib diisi.");
+    return;
+  }
+  const drives = getDrives();
+  if (drives.some(d => d.folderId === folderId)) {
+    alert("Folder ID tersebut sudah terdaftar.");
+    return;
+  }
+  drives.push({ name, folderId, builtIn: false });
+  saveDrives(drives);
+  driveNameInput.value = "";
+  driveFolderIdInput.value = "";
+  renderDriveButtons();
+  renderDriveSettings();
+  closeSettings();
+  goHome();
+};
+
+saveSiteTitleBtn.onclick = () => {
+  applySiteTitle(siteTitleInput.value);
+  alert("Judul website disimpan.");
+};
 
 function applyRunningText(text, animation = "marquee-left", font = "system") {
   const value = String(text || "").trim() || "Selamat datang di Maheva Family ❤️";
@@ -1290,6 +1592,8 @@ function restoreAppearanceSettings() {
 }
 
 function openSettings() {
+  siteTitleInput.value = safeStorageGet(SITE_TITLE_KEY, "Maheva Family");
+  renderDriveSettings();
   settingsPanel.style.display = "flex";
   settingsPanel.setAttribute("aria-hidden", "false");
   document.body.classList.add("settings-open");
@@ -1403,3 +1707,6 @@ document.addEventListener("keydown", event => {
 
 restoreAppearanceSettings();
 restoreRunningText();
+restoreSiteTitle();
+renderDriveButtons();
+
