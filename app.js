@@ -1,7 +1,7 @@
 // =======================
 // FIREBASE IMPORT
 // =======================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 
 import {
   getAuth,
@@ -31,7 +31,7 @@ const firebaseConfig = {
   appId: "1:112694935492:web:e5696cae239c50367eee91"
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -78,52 +78,8 @@ function setLoginStatus(message = "", type = "") {
   loginStatus.className = `login-status ${type}`.trim();
 }
 
-// Login handler is installed early so Enter/Submit works even if another optional feature fails.
-if (loginForm) {
-  loginForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const email = emailInput?.value.trim() || "";
-    const password = passwordInput?.value || "";
-    if (!email || !password) {
-      setLoginStatus("Email dan password wajib diisi.", "error");
-      (!email ? emailInput : passwordInput)?.focus();
-      return;
-    }
-    if (!auth) {
-      setLoginStatus("Firebase belum siap. Silakan muat ulang halaman.", "error");
-      return;
-    }
-    if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = "Memproses..."; }
-    setLoginStatus("Mengautentikasi...", "loading");
-    try {
-      const credential = await signInWithEmailAndPassword(auth, email, password);
-      passwordInput.value = "";
-      currentUser = credential.user;
-      loginBox.style.display = "none";
-      appContainer.style.display = "block";
-      logoutBtn.style.display = "block";
-      settingsBtn.style.display = "inline-flex";
-      homeBtn.style.display = "inline-flex";
-      recentBtn.style.display = "inline-flex";
-      searchBtn.style.display = "inline-flex";
-      goHome();
-      armSessionTimeout();
-      setLoginStatus("Login berhasil.", "success");
-      setTimeout(() => setLoginStatus(""), 800);
-    } catch (err) {
-      console.error("Firebase login error:", err);
-      passwordInput.value = "";
-      const code = err?.code || "";
-      const message = ["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found"].includes(code)
-        ? "Email atau password salah."
-        : `Login gagal: ${err?.message || "Terjadi kesalahan."}`;
-      setLoginStatus(message, "error");
-      try { showSecurityWarning(); } catch (warningError) { console.warn(warningError); }
-    } finally {
-      if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = "Login"; }
-    }
-  });
-}
+// Login is handled by the standalone login handler in index.html so it remains
+// available even if an optional gallery feature throws during startup.
 
 const viewerImage = document.getElementById("viewerImage");
 const viewerLoading = document.getElementById("viewerLoading");
@@ -2046,6 +2002,10 @@ function closeSecurityWarning() {
   securityWarningModal.setAttribute("aria-hidden", "true");
   document.body.classList.remove("security-warning-open");
 }
+
+window.addEventListener("maheva-login-failed", () => {
+  try { showSecurityWarning(); } catch (err) { console.warn("Security warning unavailable:", err); }
+});
 
 function restoreSecurityWarning() {
   securityWarningInput.value = safeStorageGet(SECURITY_WARNING_KEY, DEFAULT_SECURITY_WARNING);
