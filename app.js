@@ -16,7 +16,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // =======================
-// 🔥 FIREBASE CONFIG
+// 🔥 CONFIG
 // =======================
 const firebaseConfig = {
   apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
@@ -35,7 +35,7 @@ const db = getFirestore(app);
 const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
 
 // =======================
-// 🎯 DOM ELEMENT
+// 🎯 DOM
 // =======================
 const loginBox = document.getElementById("loginBox");
 const appContainer = document.getElementById("app");
@@ -46,11 +46,9 @@ const viewerFrame = document.getElementById("viewerFrame");
 const backBtn = document.getElementById("backBtn");
 const searchInput = document.getElementById("searchInput");
 
-// 🔥 INPUT LOGIN
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 
-// 🔥 INPUT JADWAL (TAMBAHAN)
 const phoneInput = document.getElementById("phone");
 const promptInput = document.getElementById("prompt");
 const timeInput = document.getElementById("time");
@@ -99,7 +97,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // =======================
-// 🔥 SIMPAN JADWAL WA (INI YANG BARU)
+// 🔥 SIMPAN FIRESTORE
 // =======================
 saveBtn.onclick = async () => {
   const phone = phoneInput.value;
@@ -123,38 +121,17 @@ saveBtn.onclick = async () => {
     alert("✅ Jadwal tersimpan!");
   } catch (err) {
     console.error(err);
-    alert("❌ Error: " + err.message);
+    alert("❌ " + err.message);
   }
 };
 
 // =======================
-// 📂 BUTTON FOLDER
+// 📂 LOAD FOLDER
 // =======================
 document.querySelectorAll("#folders button").forEach(btn => {
   btn.onclick = () => loadFolder(btn.dataset.id);
 });
 
-// =======================
-// 🔙 BACK
-// =======================
-backBtn.onclick = goBack;
-
-// =======================
-// 🔍 SEARCH
-// =======================
-searchInput.addEventListener("input", (e) => {
-  const keyword = e.target.value.toLowerCase();
-
-  const filtered = currentFiles.filter(file =>
-    file.name.toLowerCase().includes(keyword)
-  );
-
-  renderFiles(filtered);
-});
-
-// =======================
-// 📂 LOAD FOLDER
-// =======================
 async function loadFolder(folderId) {
   historyStack.push(folderId);
 
@@ -168,22 +145,16 @@ async function loadFolder(folderId) {
 
     const data = await res.json();
 
-    if (!data.files) {
-      alert("Gagal load folder!");
-      return;
-    }
-
-    currentFiles = data.files;
+    currentFiles = data.files || [];
     renderFiles(currentFiles);
 
   } catch (err) {
-    console.error(err);
-    alert("Error ambil data Drive!");
+    alert("Error load folder!");
   }
 }
 
 // =======================
-// 🎨 RENDER FILE
+// 🎨 RENDER
 // =======================
 function renderFiles(files) {
   fileGrid.innerHTML = "";
@@ -195,23 +166,13 @@ function renderFiles(files) {
     const isFolder =
       file.mimeType === "application/vnd.google-apps.folder";
 
-    let icon = "";
-
-    if (isFolder) {
-      icon = "https://cdn-icons-png.flaticon.com/512/716/716784.png";
-    } else if (file.mimeType.includes("image")) {
-      icon = `https://drive.google.com/thumbnail?id=${file.id}`;
-    } else if (file.mimeType.includes("pdf")) {
-      icon = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
-    } else if (file.mimeType.includes("video")) {
-      icon = "https://cdn-icons-png.flaticon.com/512/727/727245.png";
-    } else {
-      icon = "https://cdn-icons-png.flaticon.com/512/109/109612.png";
-    }
+    let icon = isFolder
+      ? "https://cdn-icons-png.flaticon.com/512/716/716784.png"
+      : "https://cdn-icons-png.flaticon.com/512/109/109612.png";
 
     div.innerHTML = `
       <img src="${icon}" class="file-icon">
-      <p class="file-name">${file.name}</p>
+      <p>${file.name}</p>
     `;
 
     div.onclick = () => {
@@ -224,13 +185,24 @@ function renderFiles(files) {
 }
 
 // =======================
-// 🔙 GO BACK
+// 🔙 BACK
 // =======================
-function goBack() {
+backBtn.onclick = () => {
   historyStack.pop();
   const prev = historyStack.pop();
   if (prev) loadFolder(prev);
-}
+};
+
+// =======================
+// 🔍 SEARCH
+// =======================
+searchInput.addEventListener("input", e => {
+  const keyword = e.target.value.toLowerCase();
+  const filtered = currentFiles.filter(f =>
+    f.name.toLowerCase().includes(keyword)
+  );
+  renderFiles(filtered);
+});
 
 // =======================
 // 📄 VIEWER
