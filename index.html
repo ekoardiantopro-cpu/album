@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EKO Drive Manager</title>
+  <title>Maheva Family</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header>
-  <h2>📁 EKO Drive Manager</h2>
+  <h2>🏠 Maheva Family</h2>
   <button id="logoutBtn" style="display:none;">Logout</button>
 </header>
 
@@ -26,7 +26,10 @@
 
   <div class="app-topbar">
     <div class="app-title">Album Keluarga</div>
-    <button id="settingsBtn" class="header-icon" title="Pengaturan tampilan" aria-label="Pengaturan tampilan">⚙️</button>
+    <div class="app-top-actions">
+      <button id="homeBtn" class="header-icon" title="Menu awal" aria-label="Menu awal">⌂</button>
+      <button id="settingsBtn" class="header-icon" title="Pengaturan tampilan" aria-label="Pengaturan tampilan">⚙️</button>
+    </div>
   </div>
 
   <!-- FOLDER -->
@@ -39,14 +42,10 @@
 
   <hr>
 
-  <!-- JADWAL WHATSAPP -->
-  <h3>📲 Jadwal WhatsApp</h3>
-
-  <input id="phone" placeholder="+628xxxx"><br><br>
-  <input id="prompt" placeholder="Isi pesan"><br><br>
-  <input id="time" type="time"><br><br>
-
-  <button id="saveBtn">Simpan Jadwal</button>
+  <!-- RUNNING TEXT -->
+  <div id="runningTextBar" class="running-text-bar" aria-live="polite">
+    <div id="runningTextTrack" class="running-text-track">Selamat datang di Maheva Family ❤️</div>
+  </div>
 
   <hr>
 
@@ -123,6 +122,33 @@
         <button class="accent-option" data-accent="#f59e0b" style="--accent-color:#f59e0b" title="Oranye" aria-label="Oranye"></button>
         <button class="accent-option" data-accent="#ec4899" style="--accent-color:#ec4899" title="Pink" aria-label="Pink"></button>
       </div>
+    </div>
+
+    <div class="settings-section">
+      <h4>Running text</h4>
+      <input id="runningTextInput" class="settings-text-input" type="text" maxlength="180" placeholder="Tulis pesan untuk keluarga...">
+      <div class="running-settings-grid">
+        <label>Animasi
+          <select id="runningAnimationSelect">
+            <option value="marquee-left">Geser kiri</option>
+            <option value="marquee-right">Geser kanan</option>
+            <option value="bounce">Pantul</option>
+            <option value="fade">Fade</option>
+            <option value="pulse">Pulse</option>
+            <option value="typewriter">Ketik</option>
+          </select>
+        </label>
+        <label>Font
+          <select id="runningFontSelect">
+            <option value="system">Modern</option>
+            <option value="rounded">Rounded</option>
+            <option value="serif">Serif</option>
+            <option value="mono">Monospace</option>
+            <option value="cursive">Cursive</option>
+          </select>
+        </label>
+      </div>
+      <button id="saveRunningTextBtn" class="secondary-btn">Simpan running text</button>
     </div>
 
     <div class="settings-note">Pengaturan ini tersimpan di browser/perangkat yang sedang digunakan.</div>

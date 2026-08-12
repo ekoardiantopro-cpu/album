@@ -10,12 +10,6 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // =======================
 // CONFIG
@@ -29,7 +23,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
 
 const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
 
@@ -50,13 +43,15 @@ const downloadSelectedBtn = document.getElementById("downloadSelectedBtn");
 const selectionBar = document.getElementById("selectionBar");
 const selectedCount = document.getElementById("selectedCount");
 const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+const homeBtn = document.getElementById("homeBtn");
+const runningTextTrack = document.getElementById("runningTextTrack");
+const runningTextInput = document.getElementById("runningTextInput");
+const runningAnimationSelect = document.getElementById("runningAnimationSelect");
+const runningFontSelect = document.getElementById("runningFontSelect");
+const saveRunningTextBtn = document.getElementById("saveRunningTextBtn");
 
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
-const phoneInput = document.getElementById("phone");
-const promptInput = document.getElementById("prompt");
-const timeInput = document.getElementById("time");
-const saveBtn = document.getElementById("saveBtn");
 
 const viewerImage = document.getElementById("viewerImage");
 const viewerLoading = document.getElementById("viewerLoading");
@@ -98,7 +93,6 @@ let favorites = new Set(
   JSON.parse(localStorage.getItem("eko_album_favorites") || "[]")
 );
 
-let sentCache = {};
 let pointerMap = new Map();
 let lastPinchDistance = 0;
 let dragStartX = 0;
@@ -361,34 +355,6 @@ onAuthStateChanged(auth, user => {
   }
 });
 
-// =======================
-// FIRESTORE
-// =======================
-saveBtn.onclick = async () => {
-  const phone = phoneInput.value.trim();
-  const prompt = promptInput.value.trim();
-  const time = timeInput.value;
-
-  if (!phone || !prompt || !time) {
-    alert("Isi semua field!");
-    return;
-  }
-
-  try {
-    await addDoc(collection(db, "scheduled_messages"), {
-      phone,
-      prompt,
-      time,
-      active: true,
-      createdAt: new Date()
-    });
-
-    alert("✅ Jadwal tersimpan!");
-  } catch (err) {
-    console.error(err);
-    alert("❌ " + err.message);
-  }
-};
 
 // =======================
 // FOLDER
@@ -401,6 +367,26 @@ document.querySelectorAll("#folders button").forEach(btn => {
     loadFolder(btn.dataset.id);
   };
 });
+
+function goHome() {
+  stopSlideshow();
+  historyStack = [];
+  currentFiles = [];
+  visibleFiles = [];
+  currentPhotoIndex = -1;
+  searchInput.value = "";
+  showFavoritesOnly = false;
+  favoritesBtn.classList.remove("active");
+  selectionMode = false;
+  selectedIds.clear();
+  selectModeBtn.classList.remove("active");
+  updateSelectionUI();
+  backBtn.style.display = "none";
+  fileGrid.innerHTML = "";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+homeBtn.onclick = goHome;
 
 async function fetchFolder(folderId) {
   const url =
@@ -1168,41 +1154,6 @@ async function downloadSelectedAsZip() {
 
 downloadSelectedBtn.onclick = downloadSelectedAsZip;
 
-// =======================
-// AUTO WHATSAPP
-// =======================
-setInterval(async () => {
-  const now = new Date();
-  const currentTime = now.toTimeString().slice(0, 5);
-
-  try {
-    const snapshot =
-      await getDocs(collection(db, "scheduled_messages"));
-
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const id = doc.id;
-
-      if (
-        data.time === currentTime &&
-        data.active &&
-        !sentCache[id]
-      ) {
-        const phone =
-          String(data.phone).replace("+", "");
-
-        const url =
-          `https://wa.me/${phone}` +
-          `?text=${encodeURIComponent(data.prompt)}`;
-
-        window.open(url, "_blank");
-        sentCache[id] = true;
-      }
-    });
-  } catch (err) {
-    console.error("Auto WhatsApp error:", err);
-  }
-}, 10000);
 
 // =======================
 // FAMILY THEME / SETTINGS
@@ -1220,6 +1171,36 @@ const THEME_KEY = "eko_album_theme";
 const BG_KEY = "eko_album_background";
 const ACCENT_KEY = "eko_album_accent";
 const CUSTOM_BG_KEY = "eko_album_custom_background";
+const RUNNING_TEXT_KEY = "maheva_running_text";
+const RUNNING_ANIMATION_KEY = "maheva_running_animation";
+const RUNNING_FONT_KEY = "maheva_running_font";
+
+const runningAnimations = ["marquee-left", "marquee-right", "bounce", "fade", "pulse", "typewriter"];
+const runningFonts = ["system", "rounded", "serif", "mono", "cursive"];
+
+function applyRunningText(text, animation = "marquee-left", font = "system") {
+  const value = String(text || "").trim() || "Selamat datang di Maheva Family ❤️";
+  const anim = runningAnimations.includes(animation) ? animation : "marquee-left";
+  const fontValue = runningFonts.includes(font) ? font : "system";
+
+  runningTextTrack.textContent = value;
+  runningTextTrack.className = `running-text-track anim-${anim} font-${fontValue}`;
+  runningTextInput.value = value;
+  runningAnimationSelect.value = anim;
+  runningFontSelect.value = fontValue;
+
+  safeStorageSet(RUNNING_TEXT_KEY, value);
+  safeStorageSet(RUNNING_ANIMATION_KEY, anim);
+  safeStorageSet(RUNNING_FONT_KEY, fontValue);
+}
+
+function restoreRunningText() {
+  applyRunningText(
+    safeStorageGet(RUNNING_TEXT_KEY, "Selamat datang di Maheva Family ❤️"),
+    safeStorageGet(RUNNING_ANIMATION_KEY, "marquee-left"),
+    safeStorageGet(RUNNING_FONT_KEY, "system")
+  );
+}
 
 const backgroundPresets = {
   default: "none",
@@ -1344,6 +1325,25 @@ accentOptions.forEach(btn => {
   btn.onclick = () => applyAccent(btn.dataset.accent);
 });
 
+saveRunningTextBtn.onclick = () => {
+  applyRunningText(
+    runningTextInput.value,
+    runningAnimationSelect.value,
+    runningFontSelect.value
+  );
+  closeSettings();
+};
+
+[runningAnimationSelect, runningFontSelect].forEach(control => {
+  control.addEventListener("change", () => {
+    applyRunningText(
+      runningTextInput.value,
+      runningAnimationSelect.value,
+      runningFontSelect.value
+    );
+  });
+});
+
 removeBackgroundBtn.onclick = () => {
   try {
     localStorage.removeItem(CUSTOM_BG_KEY);
@@ -1402,3 +1402,4 @@ document.addEventListener("keydown", event => {
 });
 
 restoreAppearanceSettings();
+restoreRunningText();
