@@ -45,8 +45,6 @@ const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const homeBtn = document.getElementById("homeBtn");
 const recentBtn = document.getElementById("recentBtn");
 const searchBtn = document.getElementById("searchBtn");
-const globalSearchWrap = document.getElementById("globalSearchWrap");
-const globalSearchInput = document.getElementById("globalSearchInput");
 const homeStatus = document.getElementById("homeStatus");
 const foldersEl = document.getElementById("folders");
 const runningTextTrack = document.getElementById("runningTextTrack");
@@ -466,7 +464,6 @@ function goHome() {
   backBtn.style.display = "none";
   fileGrid.innerHTML = "";
   homeStatus.textContent = "Dashboard";
-  if (typeof closeGlobalSearch === "function") closeGlobalSearch();
   renderDriveButtons();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -802,46 +799,13 @@ clearSelectionBtn.onclick = clearSelection;
 // HOME / RECENT / GLOBAL SEARCH UI
 // =======================
 recentBtn.onclick = renderRecent;
-let globalSearchTimer = null;
-function closeGlobalSearch() {
-  globalSearchWrap.style.display = "none";
-  globalSearchInput.value = "";
-  searchBtn.textContent = "⌕";
-  searchBtn.title = "Cari seluruh album";
-  searchBtn.setAttribute("aria-label", "Cari seluruh album");
-}
-
-searchBtn.onclick = () => {
+searchBtn.onclick = async () => {
   if (searchBtn.disabled) return;
-  const opening = globalSearchWrap.style.display === "none";
-  if (opening) {
-    globalSearchWrap.style.display = "block";
-    searchBtn.textContent = "✕";
-    searchBtn.title = "Tutup pencarian";
-    searchBtn.setAttribute("aria-label", "Tutup pencarian");
-    setTimeout(() => globalSearchInput.focus(), 0);
-  } else {
-    closeGlobalSearch();
-    goHome();
+  const keyword = window.prompt("Masukkan kata kunci pencarian seluruh album:", "");
+  if (keyword && keyword.trim()) {
+    await runGlobalSearch(keyword.trim());
   }
 };
-
-globalSearchInput.addEventListener("input", () => {
-  clearTimeout(globalSearchTimer);
-  const keyword = globalSearchInput.value.trim();
-  if (!keyword) {
-    goHome();
-    return;
-  }
-  globalSearchTimer = setTimeout(() => runGlobalSearch(keyword), 350);
-});
-
-globalSearchInput.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    closeGlobalSearch();
-    goHome();
-  }
-});
 
 // =======================
 // VIEWER
@@ -1252,12 +1216,6 @@ imageContainer.addEventListener("touchend", event => {
 // =======================
 // KEYBOARD
 // =======================
-closeSecurityWarningBtn.onclick = closeSecurityWarning;
-securityWarningOkBtn.onclick = closeSecurityWarning;
-securityWarningModal.addEventListener("click", event => {
-  if (event.target === securityWarningModal) closeSecurityWarning();
-});
-
 document.addEventListener("keydown", event => {
   if (viewer.style.display !== "flex") return;
 
@@ -1428,15 +1386,17 @@ const removeBackgroundBtn = document.getElementById("removeBackgroundBtn");
 const themeOptions = [...document.querySelectorAll(".theme-option")];
 const backgroundOptions = [...document.querySelectorAll(".background-option")];
 const accentOptions = [...document.querySelectorAll(".accent-option")];
-const socialSettingsList = document.getElementById("socialSettingsList");
-const addSocialBtn = document.getElementById("addSocialBtn");
+const socialInstagramInput = document.getElementById("socialInstagramInput");
+const socialLinkedinInput = document.getElementById("socialLinkedinInput");
+const socialYoutubeInput = document.getElementById("socialYoutubeInput");
+const socialFacebookInput = document.getElementById("socialFacebookInput");
 const saveSocialLinksBtn = document.getElementById("saveSocialLinksBtn");
 const securityWarningInput = document.getElementById("securityWarningInput");
 const saveSecurityWarningBtn = document.getElementById("saveSecurityWarningBtn");
-const securityWarningModal = document.getElementById("securityWarningModal");
-const securityWarningMessage = document.getElementById("securityWarningMessage");
-const closeSecurityWarningBtn = document.getElementById("closeSecurityWarningBtn");
-const securityWarningOkBtn = document.getElementById("securityWarningOkBtn");
+const socialInstagram = document.getElementById("socialInstagram");
+const socialLinkedin = document.getElementById("socialLinkedin");
+const socialYoutube = document.getElementById("socialYoutube");
+const socialFacebook = document.getElementById("socialFacebook");
 
 const THEME_KEY = "eko_album_theme";
 const BG_KEY = "eko_album_background";
@@ -1636,32 +1596,13 @@ function restoreAppearanceSettings() {
   }
 }
 
-const DEFAULT_SOCIALS = [
-  { id: "instagram", name: "Instagram", url: "", icon: "◎" },
-  { id: "linkedin", name: "LinkedIn", url: "", icon: "in" },
-  { id: "youtube", name: "YouTube", url: "", icon: "▶" },
-  { id: "facebook", name: "Facebook", url: "", icon: "f" }
-];
-
 function getSocialLinks() {
-  const raw = safeStorageGet(SOCIAL_LINKS_KEY, "");
-  if (!raw) return DEFAULT_SOCIALS.map(x => ({...x}));
   try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
-    // Migrate the old v6 object format automatically.
-    if (parsed && typeof parsed === "object") {
-      return DEFAULT_SOCIALS.map(item => ({
-        ...item,
-        url: parsed[item.id] || ""
-      }));
-    }
-  } catch {}
-  return DEFAULT_SOCIALS.map(x => ({...x}));
-}
-
-function saveSocials(items) {
-  safeStorageSet(SOCIAL_LINKS_KEY, JSON.stringify(items));
+    const data = JSON.parse(safeStorageGet(SOCIAL_LINKS_KEY, "{}"));
+    return data && typeof data === "object" ? data : {};
+  } catch {
+    return {};
+  }
 }
 
 function normalizeUrl(value) {
@@ -1671,82 +1612,37 @@ function normalizeUrl(value) {
   return `https://${raw}`;
 }
 
-function renderSocialSettings() {
-  const socials = getSocialLinks();
-  socialSettingsList.innerHTML = "";
-  socials.forEach((item, index) => {
-    const row = document.createElement("div");
-    row.className = "social-setting-row";
-    row.innerHTML = `
-      <input class="settings-text-input social-name" type="text" maxlength="40" placeholder="Nama" value="">
-      <input class="settings-text-input social-icon" type="text" maxlength="6" placeholder="Icon" value="">
-      <input class="settings-text-input social-url" type="url" placeholder="https://..." value="">
-      <button class="small-action social-remove" type="button" title="Hapus sosial media">✕</button>
-    `;
-    row.querySelector(".social-name").value = item.name || "";
-    row.querySelector(".social-icon").value = item.icon || "🔗";
-    row.querySelector(".social-url").value = item.url || "";
-    row.querySelector(".social-remove").onclick = () => {
-      const next = getSocialLinks().filter((_, i) => i !== index);
-      saveSocials(next);
-      renderSocialSettings();
-      applySocialLinks();
-    };
-    socialSettingsList.appendChild(row);
-  });
-}
-
-function collectSocialSettings() {
-  return [...socialSettingsList.querySelectorAll(".social-setting-row")].map((row, index) => ({
-    id: getSocialLinks()[index]?.id || `social_${Date.now()}_${index}`,
-    name: row.querySelector(".social-name").value.trim() || "Social Media",
-    icon: row.querySelector(".social-icon").value.trim() || "🔗",
-    url: row.querySelector(".social-url").value.trim()
-  }));
-}
-
 function applySocialLinks() {
-  const footer = document.querySelector(".social-links");
-  if (!footer) return;
-  footer.innerHTML = "";
-  getSocialLinks().forEach(item => {
-    const a = document.createElement("a");
-    const url = normalizeUrl(item.url);
-    a.href = url || "#";
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.title = item.name || "Social Media";
-    a.setAttribute("aria-label", item.name || "Social Media");
-    if (!url) {
-      a.classList.add("is-disabled");
-      a.setAttribute("aria-disabled", "true");
-      a.addEventListener("click", e => e.preventDefault());
-    }
-    const span = document.createElement("span");
-    span.textContent = item.icon || "🔗";
-    a.appendChild(span);
-    footer.appendChild(a);
+  const links = getSocialLinks();
+  const items = [
+    [socialInstagram, links.instagram],
+    [socialLinkedin, links.linkedin],
+    [socialYoutube, links.youtube],
+    [socialFacebook, links.facebook]
+  ];
+  items.forEach(([el, href]) => {
+    const url = normalizeUrl(href);
+    el.href = url || "#";
+    el.classList.toggle("is-disabled", !url);
+    el.setAttribute("aria-disabled", String(!url));
+    el.onclick = event => {
+      if (!url) event.preventDefault();
+    };
   });
 }
 
 function restoreSocialLinks() {
-  renderSocialSettings();
+  const links = getSocialLinks();
+  socialInstagramInput.value = links.instagram || "";
+  socialLinkedinInput.value = links.linkedin || "";
+  socialYoutubeInput.value = links.youtube || "";
+  socialFacebookInput.value = links.facebook || "";
   applySocialLinks();
 }
 
 function showSecurityWarning() {
   const message = safeStorageGet(SECURITY_WARNING_KEY, DEFAULT_SECURITY_WARNING);
-  securityWarningMessage.textContent = message;
-  securityWarningModal.style.display = "flex";
-  securityWarningModal.setAttribute("aria-hidden", "false");
-  document.body.classList.add("security-warning-open");
-  setTimeout(() => closeSecurityWarningBtn.focus(), 0);
-}
-
-function closeSecurityWarning() {
-  securityWarningModal.style.display = "none";
-  securityWarningModal.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("security-warning-open");
+  alert(message);
 }
 
 function restoreSecurityWarning() {
@@ -1813,17 +1709,15 @@ saveRunningTextBtn.onclick = () => {
 });
 
 saveSocialLinksBtn.onclick = () => {
-  saveSocials(collectSocialSettings());
-  renderSocialSettings();
+  const links = {
+    instagram: socialInstagramInput.value.trim(),
+    linkedin: socialLinkedinInput.value.trim(),
+    youtube: socialYoutubeInput.value.trim(),
+    facebook: socialFacebookInput.value.trim()
+  };
+  safeStorageSet(SOCIAL_LINKS_KEY, JSON.stringify(links));
   applySocialLinks();
-  alert("Sosial media disimpan.");
-};
-
-addSocialBtn.onclick = () => {
-  const socials = getSocialLinks();
-  socials.push({ id: `social_${Date.now()}`, name: "Sosial Media Baru", url: "", icon: "🔗" });
-  saveSocials(socials);
-  renderSocialSettings();
+  alert("Link sosial media disimpan.");
 };
 
 saveSecurityWarningBtn.onclick = () => {
@@ -1885,10 +1779,6 @@ backgroundUpload.onchange = event => {
 };
 
 document.addEventListener("keydown", event => {
-  if (event.key === "Escape" && securityWarningModal.style.display === "flex") {
-    closeSecurityWarning();
-    return;
-  }
   if (event.key === "Escape" && settingsPanel.style.display === "flex") {
     closeSettings();
   }
