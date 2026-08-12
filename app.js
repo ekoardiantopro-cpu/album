@@ -68,6 +68,62 @@ const saveRunningTextBtn = document.getElementById("saveRunningTextBtn");
 
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
+const loginForm = document.getElementById("loginBox");
+const loginStatus = document.getElementById("loginStatus");
+const loginBtn = document.getElementById("loginBtn");
+
+function setLoginStatus(message = "", type = "") {
+  if (!loginStatus) return;
+  loginStatus.textContent = message;
+  loginStatus.className = `login-status ${type}`.trim();
+}
+
+// Login handler is installed early so Enter/Submit works even if another optional feature fails.
+if (loginForm) {
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const email = emailInput?.value.trim() || "";
+    const password = passwordInput?.value || "";
+    if (!email || !password) {
+      setLoginStatus("Email dan password wajib diisi.", "error");
+      (!email ? emailInput : passwordInput)?.focus();
+      return;
+    }
+    if (!auth) {
+      setLoginStatus("Firebase belum siap. Silakan muat ulang halaman.", "error");
+      return;
+    }
+    if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = "Memproses..."; }
+    setLoginStatus("Mengautentikasi...", "loading");
+    try {
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      passwordInput.value = "";
+      currentUser = credential.user;
+      loginBox.style.display = "none";
+      appContainer.style.display = "block";
+      logoutBtn.style.display = "block";
+      settingsBtn.style.display = "inline-flex";
+      homeBtn.style.display = "inline-flex";
+      recentBtn.style.display = "inline-flex";
+      searchBtn.style.display = "inline-flex";
+      goHome();
+      armSessionTimeout();
+      setLoginStatus("Login berhasil.", "success");
+      setTimeout(() => setLoginStatus(""), 800);
+    } catch (err) {
+      console.error("Firebase login error:", err);
+      passwordInput.value = "";
+      const code = err?.code || "";
+      const message = ["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found"].includes(code)
+        ? "Email atau password salah."
+        : `Login gagal: ${err?.message || "Terjadi kesalahan."}`;
+      setLoginStatus(message, "error");
+      try { showSecurityWarning(); } catch (warningError) { console.warn(warningError); }
+    } finally {
+      if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = "Login"; }
+    }
+  });
+}
 
 const viewerImage = document.getElementById("viewerImage");
 const viewerLoading = document.getElementById("viewerLoading");
@@ -788,56 +844,8 @@ function restoreSessionSetting() {
 }
 
 // =======================
-// LOGIN
+// AUTH STATE / LOGOUT
 // =======================
-const loginForm = document.getElementById("loginBox");
-const loginStatus = document.getElementById("loginStatus");
-
-function setLoginStatus(message = "", type = "") {
-  if (!loginStatus) return;
-  loginStatus.textContent = message;
-  loginStatus.className = `login-status ${type}`.trim();
-}
-
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-
-  if (!email || !password) {
-    setLoginStatus("Email dan password wajib diisi.", "error");
-    if (!email) emailInput.focus();
-    else passwordInput.focus();
-    return;
-  }
-
-  const loginBtn = document.getElementById("loginBtn");
-  loginBtn.disabled = true;
-  loginBtn.textContent = "Memproses...";
-  setLoginStatus("Mengautentikasi...", "loading");
-
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    // onAuthStateChanged menangani perpindahan ke dashboard.
-    setLoginStatus("");
-    passwordInput.value = "";
-  } catch (err) {
-    console.error("Login gagal:", err);
-    passwordInput.value = "";
-    setLoginStatus("Login gagal. Periksa email dan password Anda.", "error");
-    showSecurityWarning();
-
-    try {
-      const failed = JSON.parse(localStorage.getItem("maheva_failed_logins") || "[]");
-      failed.unshift({ email, timestamp: Date.now(), userAgent: navigator.userAgent });
-      localStorage.setItem("maheva_failed_logins", JSON.stringify(failed.slice(0, 100)));
-    } catch {}
-  } finally {
-    loginBtn.disabled = false;
-    loginBtn.textContent = "Login";
-  }
-});
 
 logoutBtn.onclick = async () => {
   try {
