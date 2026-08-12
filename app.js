@@ -1,3 +1,6 @@
+// =======================
+// 🔥 FIREBASE IMPORT
+// =======================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getAuth,
@@ -5,6 +8,12 @@ import {
   signOut,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+import {
+  getFirestore,
+  collection,
+  addDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // =======================
 // 🔥 FIREBASE CONFIG
@@ -18,6 +27,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
 // =======================
 // 🔑 GOOGLE DRIVE API
@@ -36,15 +46,21 @@ const viewerFrame = document.getElementById("viewerFrame");
 const backBtn = document.getElementById("backBtn");
 const searchInput = document.getElementById("searchInput");
 
-// INPUT FIX (INI YANG TADI ERROR)
+// 🔥 INPUT LOGIN
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
+
+// 🔥 INPUT JADWAL (TAMBAHAN)
+const phoneInput = document.getElementById("phone");
+const promptInput = document.getElementById("prompt");
+const timeInput = document.getElementById("time");
+const saveBtn = document.getElementById("saveBtn");
 
 let historyStack = [];
 let currentFiles = [];
 
 // =======================
-// 🔐 LOGIN (FIX TOTAL)
+// 🔐 LOGIN
 // =======================
 document.getElementById("loginBtn").onclick = async () => {
   const email = emailInput.value.trim();
@@ -81,6 +97,35 @@ onAuthStateChanged(auth, (user) => {
     logoutBtn.style.display = "none";
   }
 });
+
+// =======================
+// 🔥 SIMPAN JADWAL WA (INI YANG BARU)
+// =======================
+saveBtn.onclick = async () => {
+  const phone = phoneInput.value;
+  const prompt = promptInput.value;
+  const time = timeInput.value;
+
+  if (!phone || !prompt || !time) {
+    alert("Isi semua field!");
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "scheduled_messages"), {
+      phone,
+      prompt,
+      time,
+      active: true,
+      createdAt: new Date()
+    });
+
+    alert("✅ Jadwal tersimpan!");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Error: " + err.message);
+  }
+};
 
 // =======================
 // 📂 BUTTON FOLDER
