@@ -14,12 +14,13 @@
 </header>
 
 <!-- LOGIN -->
-<div id="loginBox">
+<form id="loginBox">
   <h3>Login</h3>
-  <input type="email" id="email" placeholder="Email" autocomplete="off"><br><br>
-  <input type="password" id="password" placeholder="Password" autocomplete="new-password"><br><br>
-  <button id="loginBtn">Login</button>
-</div>
+  <input type="email" id="email" placeholder="Email" autocomplete="username" required><br><br>
+  <input type="password" id="password" placeholder="Password" autocomplete="current-password" required><br><br>
+  <button id="loginBtn" type="submit">Login</button>
+  <div id="loginStatus" class="login-status" role="alert" aria-live="polite"></div>
+</form>
 
 <!-- APP -->
 <div id="app" style="display:none;">

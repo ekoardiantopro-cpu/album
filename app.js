@@ -790,30 +790,54 @@ function restoreSessionSetting() {
 // =======================
 // LOGIN
 // =======================
-document.getElementById("loginBtn").onclick = async () => {
+const loginForm = document.getElementById("loginBox");
+const loginStatus = document.getElementById("loginStatus");
+
+function setLoginStatus(message = "", type = "") {
+  if (!loginStatus) return;
+  loginStatus.textContent = message;
+  loginStatus.className = `login-status ${type}`.trim();
+}
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
   const email = emailInput.value.trim();
-  const password = passwordInput.value.trim();
+  const password = passwordInput.value;
 
   if (!email || !password) {
-    alert("Email & password wajib diisi!");
+    setLoginStatus("Email dan password wajib diisi.", "error");
+    if (!email) emailInput.focus();
+    else passwordInput.focus();
     return;
   }
 
+  const loginBtn = document.getElementById("loginBtn");
+  loginBtn.disabled = true;
+  loginBtn.textContent = "Memproses...";
+  setLoginStatus("Mengautentikasi...", "loading");
+
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    currentUser = auth.currentUser;
-    await logActivity("Login berhasil", `Login akun ${email}`);
-  } catch (err) {
-    console.error(err);
-    showSecurityWarning();
+    // onAuthStateChanged menangani perpindahan ke dashboard.
+    setLoginStatus("");
     passwordInput.value = "";
-    // Failed authentication cannot be written to a Firestore collection that
-    // requires an authenticated user. Keep a local audit trail instead.
-    const failed = JSON.parse(localStorage.getItem("maheva_failed_logins") || "[]");
-    failed.unshift({ email, timestamp: Date.now(), userAgent: navigator.userAgent });
-    localStorage.setItem("maheva_failed_logins", JSON.stringify(failed.slice(0, 100)));
+  } catch (err) {
+    console.error("Login gagal:", err);
+    passwordInput.value = "";
+    setLoginStatus("Login gagal. Periksa email dan password Anda.", "error");
+    showSecurityWarning();
+
+    try {
+      const failed = JSON.parse(localStorage.getItem("maheva_failed_logins") || "[]");
+      failed.unshift({ email, timestamp: Date.now(), userAgent: navigator.userAgent });
+      localStorage.setItem("maheva_failed_logins", JSON.stringify(failed.slice(0, 100)));
+    } catch {}
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Login";
   }
-};
+});
 
 logoutBtn.onclick = async () => {
   try {
