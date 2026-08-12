@@ -1,7 +1,8 @@
 // =======================
-// 🔥 FIREBASE IMPORT
+// 🔥 FIREBASE IMPORT (FIX)
 // =======================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -12,17 +13,18 @@ import {
 import {
   getFirestore,
   collection,
-  addDoc
+  addDoc,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // =======================
 // 🔥 CONFIG
 // =======================
 const firebaseConfig = {
-  apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
+  apiKey: "ISI_API_KEY_KAMU",
   authDomain: "album-ff46e.firebaseapp.com",
   projectId: "album-ff46e",
-  appId: "1:112694935492:web:e5696cae239c50367eee91"
+  appId: "ISI_APP_ID_KAMU"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -32,7 +34,7 @@ const db = getFirestore(app);
 // =======================
 // 🔑 GOOGLE DRIVE API
 // =======================
-const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
+const API_KEY = "ISI_GOOGLE_DRIVE_API_KEY";
 
 // =======================
 // 🎯 DOM
@@ -56,6 +58,7 @@ const saveBtn = document.getElementById("saveBtn");
 
 let historyStack = [];
 let currentFiles = [];
+let sentCache = {}; // biar tidak spam
 
 // =======================
 // 🔐 LOGIN
@@ -154,7 +157,7 @@ async function loadFolder(folderId) {
 }
 
 // =======================
-// 🎨 RENDER
+// 🎨 RENDER FILE
 // =======================
 function renderFiles(files) {
   fileGrid.innerHTML = "";
@@ -216,3 +219,33 @@ document.getElementById("closeViewer").onclick = () => {
   viewer.style.display = "none";
   viewerFrame.src = "";
 };
+
+// =======================
+// ⏰ AUTO WHATSAPP (TANPA BLAZE)
+// =======================
+setInterval(async () => {
+
+  const now = new Date();
+  const currentTime = now.toTimeString().slice(0,5);
+
+  const snapshot = await getDocs(collection(db, "scheduled_messages"));
+
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const id = doc.id;
+
+    // anti spam (hanya kirim sekali)
+    if (data.time === currentTime && data.active && !sentCache[id]) {
+
+      console.log("Kirim WA ke:", data.phone);
+
+      const url = `https://wa.me/${data.phone.replace("+","")}?text=${encodeURIComponent(data.prompt)}`;
+
+      window.open(url, "_blank");
+
+      sentCache[id] = true; // tandai sudah dikirim
+    }
+
+  });
+
+}, 10000); // cek tiap 10 detik
