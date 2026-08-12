@@ -18,13 +18,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // =======================
-// 🔥 CONFIG
+// 🔥 CONFIG (API ASLI KAMU)
 // =======================
 const firebaseConfig = {
-  apiKey: "ISI_API_KEY_KAMU",
+  apiKey: "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A",
   authDomain: "album-ff46e.firebaseapp.com",
   projectId: "album-ff46e",
-  appId: "ISI_APP_ID_KAMU"
+  appId: "1:112694935492:web:e5696cae239c50367eee91"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -34,7 +34,7 @@ const db = getFirestore(app);
 // =======================
 // 🔑 GOOGLE DRIVE API
 // =======================
-const API_KEY = "ISI_GOOGLE_DRIVE_API_KEY";
+const API_KEY = "AIzaSyCYmrtHJZoVViIqHGn-frI3AXDL85l4Q-A";
 
 // =======================
 // 🎯 DOM
@@ -58,7 +58,7 @@ const saveBtn = document.getElementById("saveBtn");
 
 let historyStack = [];
 let currentFiles = [];
-let sentCache = {}; // biar tidak spam
+let sentCache = {}; // anti spam
 
 // =======================
 // 🔐 LOGIN
@@ -221,7 +221,7 @@ document.getElementById("closeViewer").onclick = () => {
 };
 
 // =======================
-// ⏰ AUTO WHATSAPP (TANPA BLAZE)
+// ⏰ AUTO WHATSAPP
 // =======================
 setInterval(async () => {
 
@@ -234,7 +234,6 @@ setInterval(async () => {
     const data = doc.data();
     const id = doc.id;
 
-    // anti spam (hanya kirim sekali)
     if (data.time === currentTime && data.active && !sentCache[id]) {
 
       console.log("Kirim WA ke:", data.phone);
@@ -243,9 +242,9 @@ setInterval(async () => {
 
       window.open(url, "_blank");
 
-      sentCache[id] = true; // tandai sudah dikirim
+      sentCache[id] = true;
     }
 
   });
 
-}, 10000); // cek tiap 10 detik
+}, 10000);
